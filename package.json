@@ -1,0 +1,51 @@
+{
+    "name": "@korva.io/mira",
+    "version": "1.0.0",
+    "description": "AI-powered database query interpreter",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc && terser dist/index.js -o dist/index.min.js",
+        "start": "node dist/index.js",
+        "dev": "tsx watch src/index.ts",
+        "test": "vitest",
+        "lint": "eslint . --ext .ts",
+        "format": "prettier --write \"src/**/*.ts\"",
+        "prepare": "husky install"
+    },
+    "dependencies": {
+        "@fastify/env": "^4.2.0",
+        "@fastify/swagger": "^8.12.1",
+        "@fastify/swagger-ui": "^1.10.1",
+        "axios": "^1.6.2",
+        "fastify": "^4.24.3",
+        "ioredis": "^5.3.2",
+        "jsonwebtoken": "^9.0.2",
+        "mongodb": "^6.3.0",
+        "neverthrow": "^6.1.0",
+        "pg": "^8.11.3",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "@types/jsonwebtoken": "^9.0.5",
+        "@types/node": "^20.10.0",
+        "@types/pg": "^8.10.9",
+        "@typescript-eslint/eslint-plugin": "^6.13.1",
+        "@typescript-eslint/parser": "^6.13.1",
+        "eslint": "^8.54.0",
+        "eslint-config-prettier": "^9.0.0",
+        "eslint-plugin-prettier": "^5.0.1",
+        "husky": "^8.0.3",
+        "lint-staged": "^15.2.0",
+        "pino-pretty": "^13.0.0",
+        "prettier": "^3.1.0",
+        "terser": "^5.27.0",
+        "tsx": "^4.6.2",
+        "typescript": "^5.3.2",
+        "vitest": "^0.34.6"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
