@@ -52,6 +52,49 @@ const queryRoutes: FastifyPluginAsync = async (fastify) => {
       return { data: result.value.data };
     }
   );
+
+  // New endpoint for schema insights
+  fastify.post<{ Body: { failedQueries: string[]; connectionString: string } }>(
+    `${API_PREFIX}/schema/insights`,
+    {
+      schema: {
+        tags: ['query'],
+        summary: 'Generate schema insights',
+        description: 'Analyzes failed queries and generates schema improvement recommendations',
+        body: {
+          type: 'object',
+          required: ['failedQueries', 'connectionString'],
+          properties: {
+            failedQueries: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+            connectionString: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              insights: { type: 'string' },
+            },
+          },
+          400: errorResponseSchema,
+          500: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { failedQueries, connectionString } = request.body;
+
+      const result = await queryService.generateSchemaInsights(failedQueries, connectionString);
+      if (result.isErr()) {
+        return reply.status(500).send({ error: result.error.message });
+      }
+
+      return { insights: result.value };
+    }
+  );
 };
 
 export default queryRoutes;
