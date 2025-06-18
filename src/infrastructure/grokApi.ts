@@ -17,7 +17,7 @@ export class GrokApi implements AiService {
 
   constructor() {
     this.apiKey = process.env['GROK_API_KEY'] || '';
-    this.baseUrl = process.env['GROK_API_URL'] || 'https://api.x.ai/grok/v1';
+    this.baseUrl = process.env['GROK_API_URL'] || 'https://api.x.ai/v1';
   }
 
   private async makeRequest(
@@ -33,12 +33,13 @@ export class GrokApi implements AiService {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-1',
+          model: 'grok-3-mini',
           messages,
           temperature,
-          max_tokens: maxTokens,
+          // max_tokens: maxTokens,
         }),
       });
+
 
       if (!response.ok) {
         return err({
@@ -163,5 +164,41 @@ export class GrokApi implements AiService {
       failedQueries: JSON.stringify(failedQueries),
       schema,
     });
+  }
+
+  async analyzeMongoDBCollectionStructure(
+    collections: Record<string, unknown>[]
+  ): Promise<Result<string, QueryError>> {
+    const result = await this.callPrompt(PromptName.MONGODB_COLLECTION_STRUCTURE, {
+      collections: JSON.stringify(collections),
+    });
+
+    if (result.isErr()) {
+      return err({
+        message: 'Failed to analyze query',
+        code: 'QUERY_ANALYSIS_FAILED',
+        details: result.error,
+      });
+    }
+
+    return JSON.parse(result.value) as Record<string, unknown>;
+  }
+
+  async analyzeMongoDBDistinctFields(
+    collections: Record<string, unknown>[]
+  ): Promise<Result<string, QueryError>> {
+    const result = await this.callPrompt(PromptName.MONGODB_DISTINCT_FIELDS, {
+      collections: JSON.stringify(collections),
+    });
+
+    if (result.isErr()) {
+      return err({
+        message: 'Failed to analyze query',
+        code: 'QUERY_ANALYSIS_FAILED',
+        details: result.error,
+      });
+    }
+
+    return ok(JSON.parse(result.value) as Record<string, unknown>);
   }
 }

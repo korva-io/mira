@@ -66,4 +66,5 @@ export const healthResponseSchema = {
     timestamp: { type: 'string', format: 'date-time' },
     version: { type: 'string', example: '1.0.0' },
   },
+  additionalProperties: true,
 } as const;

@@ -4,22 +4,24 @@ import { DatabaseRepository } from '../interfaces';
 import { QueryError, QueryResult } from '../../domain/types';
 
 export class PostgresRepository implements DatabaseRepository {
-  private pool: Pool;
+  async executeQuery(
+    connectionString: string,
+    query: string,
+    params: unknown[] = []
+  ): Promise<Result<QueryResult, QueryError>> {
+    const pool = new Pool({ connectionString });
+    const startTime = Date.now();
 
-  constructor() {
-    this.pool = new Pool({
-      connectionString: process.env.POSTGRES_CONNECTION_STRING,
-    });
-  }
-
-  async executeQuery(query: string): Promise<Result<QueryResult, QueryError>> {
     try {
-      const result = await this.pool.query(query);
+      const result = await pool.query(query, params);
+      const executionTime = Date.now() - startTime;
+
       return ok({
         data: result.rows,
         metadata: {
-          rowCount: result.rowCount,
-          command: result.command,
+          executionTime,
+          queryType: 'postgres',
+          timestamp: new Date().toISOString(),
         },
       });
     } catch (error) {
@@ -28,6 +30,8 @@ export class PostgresRepository implements DatabaseRepository {
         code: 'POSTGRES_ERROR',
         details: error,
       });
+    } finally {
+      await pool.end();
     }
   }
 }

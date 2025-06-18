@@ -3,6 +3,8 @@ export enum PromptName {
   QUERY_BUILDER = 'QUERY_BUILDER',
   DATA_ANALYZER = 'DATA_ANALYZER',
   INSIGHT_ENGINE = 'INSIGHT_ENGINE',
+  MONGODB_COLLECTION_STRUCTURE = 'MONGODB_COLLECTION_STRUCTURE',
+  MONGODB_DISTINCT_FIELDS = 'MONGODB_DISTINCT_FIELDS',
 }
 
 export const PROMPTS = {
@@ -21,6 +23,14 @@ export const PROMPTS = {
   [PromptName.INSIGHT_ENGINE]: {
     name: 'korva.mira.insight_engine',
     description: 'Generate schema improvement recommendations',
+  },
+  [PromptName.MONGODB_COLLECTION_STRUCTURE]: {
+    name: 'korva.mira.mongodb_collection_structure',
+    description: 'Analyze MongoDB collection structure and generate detailed field definitions',
+  },
+  [PromptName.MONGODB_DISTINCT_FIELDS]: {
+    name: 'korva.mira.mongodb_distinct_fields',
+    description: 'Identify fields suitable for MongoDB distinct operations',
   },
 } as const;
 
@@ -118,5 +128,64 @@ You must:
 
 This prompt helps businesses improve their database structure based on user demand, without needing a data engineer to analyze every failure.`,
     userPromptTemplate: 'Analyze failed queries: {failedQueries}\n\nCurrent schema: {schema}',
+  },
+  [PromptName.MONGODB_COLLECTION_STRUCTURE]: {
+    name: PROMPTS[PromptName.MONGODB_COLLECTION_STRUCTURE].name,
+    description: PROMPTS[PromptName.MONGODB_COLLECTION_STRUCTURE].description,
+    systemPrompt: `Analyze a dataset containing multiple MongoDB collections (e.g., arrays of objects). Generate a JSON object with a single key, collectionsStructure, containing an array of collection definitions based on a sample of up to 5 records per collection. Each collection definition should include:
+
+collectionName: The name of the collection (inferred from the dataset).
+description: A brief description of the collection's purpose or content.
+fields: An array of field definitions, each including:
+name: The field name.
+type: The data type (e.g., string, number, boolean, object, array, date, UUID).
+description: A description of the field's purpose or what it represents.
+format (for Date or timestamp fields only): The data format (e.g., ISO 8601 string, Unix timestamp in milliseconds).
+example (for Date or timestamp fields only): A sample value from the data or a representative example.
+constraints: If applicable, specify:
+enum: A list of distinct, non-duplicated values for fields with consistent categorical data.
+acceptedValues: For fields with a limited set of values (e.g., status or type fields).
+pattern: For fields like hashes or IDs, describe the expected format (e.g., UUID, hash).
+required: Whether the field is mandatory (true/false).
+unique: Whether the field must be unique (true/false).
+random/input-based: For fields with inconsistent or user-provided values (e.g., names, URLs), specify the type and description without listing specific values.
+relationships: Describe any relationships with other collections (e.g., foreign keys, referenced fields).
+sampleSize: Indicate the number of records analyzed (up to 5).
+For fields identified as Date types (e.g., stored as ISO date strings or Date objects) or number types explicitly representing timestamps (e.g., fields named dateAdd, dateUpdate, dateStart, dateEnd, dateEndCompress, dateStartCompress, dateEndDelete, dateEndUpload, dateStartDelete, dateStartUpload), include the format and example properties to specify the data format and provide a sample value, respectively.
+
+Ensure the output is:
+
+Non-redundant (no duplicate enums, accepted values, or field details).
+Clean and structured as a JSON object with the collectionsStructure key.
+Comprehensive, covering all fields and their properties, with detailed format and example information for Date and timestamp fields.
+Independent of the specific dataset provided, but applicable to any similar dataset with MongoDB collections.
+Output the result in a JSON format collectionsStructure top level key and the results as specified`,
+    userPromptTemplate: 'Analyze MongoDB collections structure for: {collections}',
+  },
+  [PromptName.MONGODB_DISTINCT_FIELDS]: {
+    name: PROMPTS[PromptName.MONGODB_DISTINCT_FIELDS].name,
+    description: PROMPTS[PromptName.MONGODB_DISTINCT_FIELDS].description,
+    systemPrompt: `Analyze a MongoDB collection structure (e.g., a JSON schema defining collections, fields, types, and constraints). Generate a JSON array of objects, each representing a collection and containing:
+
+collectionName: The name of the collection (string).
+distinctFields: An array of strings listing the names of fields suitable for the MongoDB distinct operation (using dot notation for nested fields, e.g., generator.type).
+Criteria for selecting fields:
+
+Include fields with explicit enum constraints in the schema.
+Include fields with a limited set of categorical values (e.g., status, type, role, priority, or boolean fields), based on their description or context.
+Exclude fields with:
+Random or user-provided values (e.g., names, URLs, notes, free-text fields).
+Unique identifiers (e.g., _id, hashes, UUIDs).
+Continuous or unbounded values (e.g., timestamps, dates, file sizes, numbers).
+For nested fields (e.g., within objects or arrays), include them if they meet the criteria, using dot notation.
+If no fields are suitable for distinct in a collection, include the collection with an empty distinctFields array.
+Ensure the output is:
+
+Non-redundant (no duplicate fields).
+Clean and minimal, containing only collectionName and distinctFields with field names.
+Comprehensive, covering all collections and relevant fields.
+Independent of the specific dataset, but applicable to any MongoDB collection structure with similar schema definitions.
+Output the result in a JSON format wrapped in an artifact tag, with a unique artifact ID, titled "distinct_fields.json", and content type "application/json".`,
+    userPromptTemplate: 'Analyze distinct fields for MongoDB collections: {collections}',
   },
 };
