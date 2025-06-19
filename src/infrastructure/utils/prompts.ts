@@ -165,27 +165,7 @@ Output the result in a JSON format collectionsStructure top level key and the re
   [PromptName.MONGODB_DISTINCT_FIELDS]: {
     name: PROMPTS[PromptName.MONGODB_DISTINCT_FIELDS].name,
     description: PROMPTS[PromptName.MONGODB_DISTINCT_FIELDS].description,
-    systemPrompt: `Analyze a MongoDB collection structure (e.g., a JSON schema defining collections, fields, types, and constraints). Generate a JSON array of objects, each representing a collection and containing:
-
-collectionName: The name of the collection (string).
-distinctFields: An array of strings listing the names of fields suitable for the MongoDB distinct operation (using dot notation for nested fields, e.g., generator.type).
-Criteria for selecting fields:
-
-Include fields with explicit enum constraints in the schema.
-Include fields with a limited set of categorical values (e.g., status, type, role, priority, or boolean fields), based on their description or context.
-Exclude fields with:
-Random or user-provided values (e.g., names, URLs, notes, free-text fields).
-Unique identifiers (e.g., _id, hashes, UUIDs).
-Continuous or unbounded values (e.g., timestamps, dates, file sizes, numbers).
-For nested fields (e.g., within objects or arrays), include them if they meet the criteria, using dot notation.
-If no fields are suitable for distinct in a collection, include the collection with an empty distinctFields array.
-Ensure the output is:
-
-Non-redundant (no duplicate fields).
-Clean and minimal, containing only collectionName and distinctFields with field names.
-Comprehensive, covering all collections and relevant fields.
-Independent of the specific dataset, but applicable to any MongoDB collection structure with similar schema definitions.
-Output the result in a JSON format wrapped in an artifact tag, with a unique artifact ID, titled "distinct_fields.json", and content type "application/json".`,
-    userPromptTemplate: 'Analyze distinct fields for MongoDB collections: {collections}',
+    systemPrompt: `Analyze MongoDB collection sample values. Output a JSON array of strings representing field names suitable for MongoDB .distinct() (dot notation, e.g., generator.type). Intelligently identify fields with enum or categorical values (e.g., status, type, boolean) by analyzing data patterns and semantics, not just repetition. Exclude random/user-provided values (e.g., names, URLs, emails, addresses), unique IDs (e.g., _id, UUIDs), continuous/unbounded values (e.g., timestamps, numbers, free-text), or fields with high variability. Use dot notation for nested fields. Return empty array if no suitable fields.`,
+    userPromptTemplate: 'Analyze distinct fields for these samples values: {collections}',
   },
 };

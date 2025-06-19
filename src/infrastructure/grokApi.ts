@@ -40,7 +40,6 @@ export class GrokApi implements AiService {
         }),
       });
 
-
       if (!response.ok) {
         return err({
           message: `Grok API error: ${response.statusText}`,
@@ -184,21 +183,16 @@ export class GrokApi implements AiService {
     return JSON.parse(result.value) as Record<string, unknown>;
   }
 
-  async analyzeMongoDBDistinctFields(
-    collections: Record<string, unknown>[]
-  ): Promise<Result<string, QueryError>> {
+  async analyzeMongoDBDistinctFields(collections: Record<string, unknown>[]): Promise<string[]> {
     const result = await this.callPrompt(PromptName.MONGODB_DISTINCT_FIELDS, {
       collections: JSON.stringify(collections),
     });
 
     if (result.isErr()) {
-      return err({
-        message: 'Failed to analyze query',
-        code: 'QUERY_ANALYSIS_FAILED',
-        details: result.error,
-      });
+      console.error('Failed to analyze distinct fields: ', result.error);
+      return [];
     }
 
-    return ok(JSON.parse(result.value) as Record<string, unknown>);
+    return JSON.parse(result.value) as string[];
   }
 }

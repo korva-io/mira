@@ -32,6 +32,11 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
         version: '1.0.0',
       };
 
+      return {
+        ...baseResponse,
+        data: result,
+      };
+
       if (result.isOk()) {
         return {
           ...baseResponse,
