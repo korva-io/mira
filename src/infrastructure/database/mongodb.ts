@@ -3,7 +3,7 @@ import { Result, err, ok } from 'neverthrow';
 import { DatabaseRepository } from '../interfaces';
 import { QueryError, QueryResult } from '../../domain/types';
 import { GrokApi } from '../grokApi';
-import { truncateValueList } from '../utils/truncate';
+import { truncateValue, truncateValueList } from '../utils/truncate';
 import { RedisCache } from '../cache/redis';
 
 // Import JsonItem type from truncate utils
@@ -413,8 +413,6 @@ export class MongoRepository implements DatabaseRepository {
         })
       );
 
-      console.log('collections: ', collections);
-
       // 4. build the relationships between collections (using ai)
       const relationships = await this.buildCollectionsRelationshipsAsync(collections);
       // 5. TODO: save to db and cache
@@ -535,7 +533,7 @@ export class MongoRepository implements DatabaseRepository {
             ])
             .toArray();
 
-          distinctValues[fieldName] = fieldValues.map((doc) => doc['value']);
+          distinctValues[fieldName] = fieldValues.map((doc) => truncateValue(doc['value']));
         } catch (error) {
           console.warn(`Failed to get distinct values for field ${fieldName}:`, error);
           distinctValues[fieldName] = [];

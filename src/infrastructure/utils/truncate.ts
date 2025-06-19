@@ -85,7 +85,7 @@ function truncateJsonString(jsonString: string): string {
 }
 
 // Function to truncate a value (string or JSON)
-function truncateValue(value: any): any {
+export function truncateValue(value: unknown): unknown {
   if (typeof value === 'string') {
     if (isValidJSON(value)) {
       return truncateJsonString(value);
