@@ -33,7 +33,6 @@ interface CollectionSchema {
   capped: boolean;
   last_discovery_timestamp: string;
   fields: FieldSchema[];
-  indexes: IndexDescription[];
   sampleFieldsValues: Record<string, unknown[]>;
   sampleDocuments?: unknown[];
   stats: {
@@ -46,10 +45,12 @@ interface CollectionSchema {
 }
 
 interface FieldSchema {
-  name: string;
-  type: string;
+  name?: string;
+  type?: string;
+  nameType?: string; // name:type
   isPrimaryKey?: boolean;
-  unique?: boolean;
+  isIndex?: boolean;
+  isUnique?: boolean;
   nullable?: boolean;
   // sampleValues?: unknown[]; too complex to handle
   description?: string;
@@ -144,74 +145,6 @@ export class MongoRepository implements DatabaseRepository {
     return randomItemsByCollection;
   }
 
-  private async inferCollectionSchema(db: Db, collectionName: string): Promise<FieldSchema[]> {
-    const collection = db.collection(collectionName);
-    const sampleDocs = await collection.find().limit(10).toArray();
-    const fields: FieldSchema[] = [];
-
-    if (sampleDocs.length > 0) {
-      const firstDoc = sampleDocs[0] as Record<string, unknown>;
-      for (const [key, value] of Object.entries(firstDoc)) {
-        if (key !== '_id') {
-          fields.push({
-            name: key,
-            type: typeof value,
-            nullable: sampleDocs.some((doc) => (doc as Record<string, unknown>)[key] === null),
-            unique: false, // Would need to check indexes to determine this
-          });
-        }
-      }
-    }
-
-    return fields;
-  }
-
-  async discoverSchema(db: Db): Promise<DatabaseSchema> {
-    const now = new Date().toISOString();
-    const collectionsList = await db.listCollections().toArray();
-    const collections: CollectionSchema[] = [];
-    const collectionsFields: { [collectionName: string]: string[] } = {};
-    const collectionsNames: string[] = [];
-
-    // Get database metadata
-    const metadata = await this.getDatabaseMetadata(db);
-
-    // Process each collection
-    for (const collection of collectionsList) {
-      const info = await this.getCollectionInfo(db, collection.name);
-      const fields = await this.inferCollectionSchema(db, collection.name);
-      const indexes = await db.collection(collection.name).indexes();
-      const stats = await db.command({ collStats: collection.name });
-
-      collectionsNames.push(collection.name);
-      collectionsFields[collection.name] = fields.map((f) => f.name);
-
-      collections.push({
-        name: collection.name,
-        capped: info.capped,
-        last_discovery_timestamp: now,
-        fields,
-        indexes: indexes as IndexDescription[],
-        sampleFieldsValues: {}, // Will be populated later
-        stats: {
-          count: stats['count'] as number,
-          storageSize: stats['storageSize'] as number,
-          avgObjSize: (stats['avgObjSize'] as number) || 0,
-          totalSize: stats['totalSize'] as number,
-          size: stats['size'] as number,
-        },
-      });
-    }
-
-    return {
-      metadata,
-      collectionsNames,
-      collectionsFields,
-      collections,
-      relationships: [], // Will be populated later
-    };
-  }
-
   async executeQuery(
     connectionString: string,
     query: string,
@@ -298,6 +231,24 @@ export class MongoRepository implements DatabaseRepository {
     }
     return nestedSchema;
   }
+  private checkIndexStatus(
+    indexes: IndexDescription[],
+    fieldName: string
+  ): { isIndexed: boolean; isUnique: boolean } {
+    let isIndexed = false;
+    let isUnique = false;
+
+    for (const index of indexes) {
+      if (fieldName in index.key) {
+        isIndexed = true;
+        if (index.unique === true) {
+          isUnique = true;
+        }
+      }
+    }
+
+    return { isIndexed, isUnique };
+  }
 
   private async buildCollectionFieldsSchemaAsync(
     db: Db,
@@ -305,6 +256,8 @@ export class MongoRepository implements DatabaseRepository {
   ): Promise<{ schema: FieldSchema[]; samples: unknown[] }> {
     const schema: FieldSchema[] = [];
     let samples: unknown[] = [];
+    const indexes: IndexDescription[] = await db.collection(collectionName).indexes();
+
     try {
       samples = await db
         .collection(collectionName)
@@ -360,12 +313,21 @@ export class MongoRepository implements DatabaseRepository {
 
       // Finalize schema by processing collected values for min/max/avg/unique
       for (const key in fieldMap) {
-        const field = fieldMap[key];
+        const field = { ...fieldMap[key], ...this.checkIndexStatus(indexes, key) } as FieldSchema;
+        field.nameType = `${field.name}:${field.type}`;
         // Remove temporary values array
         delete (field as any).values;
+        delete field.name;
+        delete field.type;
 
-        // field.sampleValues = sampleDocuments;
-        schema.push(field as FieldSchema);
+        // Remove all properties with value === false
+        for (const prop in field) {
+          if (field[prop] === false) {
+            delete field[prop];
+          }
+        }
+
+        schema.push(field);
       }
     } catch (error) {
       console.warn(`Could not infer schema for collection ${collectionName}:`, error);
@@ -435,7 +397,6 @@ export class MongoRepository implements DatabaseRepository {
     collectionName: string
   ): Promise<CollectionSchema> {
     const stats: Record<string, unknown> = await db.command({ collStats: collectionName });
-    const indexes: IndexDescription[] = await db.collection(collectionName).indexes();
     const { schema: fields, samples: sampleDocuments } =
       await this.buildCollectionFieldsSchemaAsync(db, collectionName);
 
@@ -443,7 +404,6 @@ export class MongoRepository implements DatabaseRepository {
       name: collectionName,
       capped: stats['capped'] as boolean,
       last_discovery_timestamp: new Date().toISOString(),
-      indexes,
       sampleDocuments,
       fields,
       sampleFieldsValues: {}, // Initialize with empty object, will be populated later
@@ -486,7 +446,7 @@ export class MongoRepository implements DatabaseRepository {
 
     // 4. get distinct values for each identified field
     if (potentialDistinctFields.length > 0) {
-      const distinctValues: Record<string, unknown[]> = {};
+      const distinctValues: Record<string, string> = {};
 
       // Process each field individually for better control and debugging
       for (const fieldName of potentialDistinctFields) {
@@ -533,7 +493,10 @@ export class MongoRepository implements DatabaseRepository {
             ])
             .toArray();
 
-          distinctValues[fieldName] = fieldValues.map((doc) => truncateValue(doc['value']));
+          distinctValues[fieldName] = fieldValues
+            .map((doc) => truncateValue(doc['value']))
+            .sort()
+            .join('|');
         } catch (error) {
           console.warn(`Failed to get distinct values for field ${fieldName}:`, error);
           distinctValues[fieldName] = [];
@@ -551,8 +514,6 @@ export class MongoRepository implements DatabaseRepository {
     // 8. return the schema
 
     return coreSchema;
-    const schema = await this.discoverSchema(db);
-    return schema.collections[collectionName];
   }
 
   private async buildCollectionsRelationshipsAsync(
@@ -583,8 +544,6 @@ export class MongoRepository implements DatabaseRepository {
         [dbs[5]].map(async (db) => {
           const rest = await this.buildDatabaseStructureAsync(db);
           return rest;
-
-          const schema = await this.discoverSchema(db);
 
           const structures: Record<string, unknown>[] = [];
 

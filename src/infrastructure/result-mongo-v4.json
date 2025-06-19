@@ -1,0 +1,717 @@
+{
+    "status": "ok",
+    "timestamp": "2025-06-19T05:49:11.707Z",
+    "version": "1.0.0",
+    "data": {
+        "value": {
+            "data": [
+                {
+                    "metadata": {
+                        "name": "bots",
+                        "sizeOnDisk": 9312409,
+                        "empty": false,
+                        "version": "8.0.10",
+                        "last_discovery_timestamp": "2025-06-19T05:49:10.989Z"
+                    },
+                    "collectionsNames": [
+                        "processed_files_transcriptions",
+                        "processed_files_minutes",
+                        "processed_files_keywords",
+                        "urls",
+                        "members",
+                        "Bin",
+                        "alerts",
+                        "processed_files_metadata",
+                        "processed_files",
+                        "ek_events"
+                    ],
+                    "collectionsFields": {
+                        "processed_files_transcriptions": [
+                            "_id",
+                            "text",
+                            "task",
+                            "language",
+                            "duration",
+                            "segments",
+                            "rawUuid",
+                            "dateAdd",
+                            "dateUpdate"
+                        ],
+                        "processed_files_minutes": [
+                            "_id",
+                            "abstractSummary",
+                            "keyPoints",
+                            "actionItems",
+                            "sentiment",
+                            "dateAdd",
+                            "dateUpdate"
+                        ],
+                        "processed_files_keywords": [],
+                        "urls": [
+                            "_id",
+                            "generator",
+                            "dateAdd",
+                            "dateUpdate",
+                            "history",
+                            "orginalUrlHash",
+                            "originalUrl",
+                            "slug"
+                        ],
+                        "members": [
+                            "_id",
+                            "firstName",
+                            "lastName",
+                            "username",
+                            "email",
+                            "phoneNumbers",
+                            "slackProfile",
+                            "dateAdd",
+                            "dateUpdate",
+                            "projects",
+                            "roles"
+                        ],
+                        "Bin": [],
+                        "alerts": [
+                            "_id",
+                            "origin",
+                            "originType",
+                            "author",
+                            "severity",
+                            "priority",
+                            "emergency",
+                            "channels",
+                            "body",
+                            "dateAdd",
+                            "dateUpdate",
+                            "history",
+                            "status"
+                        ],
+                        "processed_files_metadata": [
+                            "_id",
+                            "rawUuid",
+                            "uploadedFilesTypes",
+                            "client",
+                            "deletedFilesTypes",
+                            "compressedFilesTypes",
+                            "fileName",
+                            "dateAdd",
+                            "dateUpdate",
+                            "driveFolderId",
+                            "slackThreadId"
+                        ],
+                        "processed_files": [
+                            "_id",
+                            "dateAdd",
+                            "dateEndCompress",
+                            "dateStartCompress",
+                            "rawUuid",
+                            "sourceUrl",
+                            "fileExtension",
+                            "isCompressed",
+                            "exportType",
+                            "fileSizeMB",
+                            "uuid",
+                            "isDeleted",
+                            "isUploaded",
+                            "dateEndDelete",
+                            "dateEndUpload",
+                            "dateStartDelete",
+                            "dateStartUpload"
+                        ],
+                        "ek_events": [
+                            "_id",
+                            "dateStart",
+                            "eventId",
+                            "client",
+                            "dateAdd",
+                            "dateEnd",
+                            "dateUpdate",
+                            "isCanceled",
+                            "title"
+                        ]
+                    },
+                    "collections": [
+                        {
+                            "name": "processed_files_transcriptions",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.436Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "rawUuid:string"
+                                },
+                                {
+                                    "nameType": "dateAdd:Date"
+                                },
+                                {
+                                    "nameType": "dateUpdate:Date"
+                                },
+                                {
+                                    "nameType": "duration:number"
+                                },
+                                {
+                                    "nameType": "language:string"
+                                },
+                                {
+                                    "items": {
+                                        "type": "object"
+                                    },
+                                    "nameType": "segments:array<object>"
+                                },
+                                {
+                                    "nameType": "task:string"
+                                },
+                                {
+                                    "nameType": "text:string"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "language": "english|french|swedish",
+                                "task": "transcribe"
+                            },
+                            "stats": {
+                                "count": 23,
+                                "storageSize": 1073152,
+                                "avgObjSize": 79276,
+                                "totalSize": 1146880,
+                                "size": 1823362
+                            }
+                        },
+                        {
+                            "name": "processed_files_minutes",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.446Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "rawUuid:string"
+                                },
+                                {
+                                    "nameType": "abstractSummary:string"
+                                },
+                                {
+                                    "nameType": "actionItems:string"
+                                },
+                                {
+                                    "nameType": "dateAdd:Date"
+                                },
+                                {
+                                    "nameType": "dateUpdate:Date"
+                                },
+                                {
+                                    "nameType": "keyPoints:string"
+                                },
+                                {
+                                    "nameType": "sentiment:string"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "sentiment": "Den allmänna känslan i texten är positiv. Diskussi|L'analyse du sentiment de ce texte indique une ton|L'analyse du sentiment de ce texte indique une ton|L'analyse du sentiment de ce texte indique une ton|L'analyse du sentiment de ce texte révèle une tona|L'analyse du sentiment de ce texte révèle une tona|The sentiment of the text is generally neutral. Th|The sentiment of the text is generally neutral. Th|The sentiment of the text is generally positive. T|The sentiment of this text is generally neutral. T"
+                            },
+                            "stats": {
+                                "count": 23,
+                                "storageSize": 159744,
+                                "avgObjSize": 3866,
+                                "totalSize": 233472,
+                                "size": 88926
+                            }
+                        },
+                        {
+                            "name": "processed_files_keywords",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.442Z",
+                            "fields": [],
+                            "sampleFieldsValues": {},
+                            "stats": {
+                                "count": 0,
+                                "storageSize": 4096,
+                                "avgObjSize": 0,
+                                "totalSize": 12288,
+                                "size": 0
+                            }
+                        },
+                        {
+                            "name": "urls",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.393Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "fields": [
+                                        {
+                                            "name": "type",
+                                            "type": "string",
+                                            "nullable": false
+                                        },
+                                        {
+                                            "name": "id",
+                                            "type": "string",
+                                            "nullable": false
+                                        }
+                                    ],
+                                    "nameType": "generator:object"
+                                },
+                                {
+                                    "nameType": "dateAdd:Date"
+                                },
+                                {
+                                    "nameType": "dateUpdate:Date"
+                                },
+                                {
+                                    "items": {
+                                        "type": "object"
+                                    },
+                                    "nameType": "history:array<object>"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "orginalUrlHash:string"
+                                },
+                                {
+                                    "nameType": "originalUrl:string"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "slug:string"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "generator.type": "Api"
+                            },
+                            "stats": {
+                                "count": 1,
+                                "storageSize": 36864,
+                                "avgObjSize": 776,
+                                "totalSize": 147456,
+                                "size": 776
+                            }
+                        },
+                        {
+                            "name": "members",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.403Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "nameType": "firstName:string"
+                                },
+                                {
+                                    "nameType": "lastName:string"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "username:string"
+                                },
+                                {
+                                    "nameType": "email:string"
+                                },
+                                {
+                                    "items": {
+                                        "type": "object"
+                                    },
+                                    "nameType": "phoneNumbers:array<object>"
+                                },
+                                {
+                                    "fields": [
+                                        {
+                                            "name": "id",
+                                            "type": "string",
+                                            "nullable": false
+                                        },
+                                        {
+                                            "name": "username",
+                                            "type": "string",
+                                            "nullable": false
+                                        },
+                                        {
+                                            "name": "name",
+                                            "type": "string",
+                                            "nullable": false
+                                        }
+                                    ],
+                                    "nameType": "slackProfile:object"
+                                },
+                                {
+                                    "nameType": "dateAdd:Date"
+                                },
+                                {
+                                    "nameType": "dateUpdate:Date"
+                                },
+                                {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "nameType": "projects:array<string>"
+                                },
+                                {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "nameType": "roles:array<string>"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "roles": "admins|devs|managers",
+                                "projects": "client-booxi|client-constellio|client-leya|client-synerion|client-vircom|internal-korva|internal-nanodev|leya|synerion",
+                                "phoneNumbers.countryCode": "+1|+237",
+                                "phoneNumbers.isoNumber": "CA|CM"
+                            },
+                            "stats": {
+                                "count": 12,
+                                "storageSize": 36864,
+                                "avgObjSize": 452,
+                                "totalSize": 184320,
+                                "size": 5431
+                            }
+                        },
+                        {
+                            "name": "Bin",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.407Z",
+                            "fields": [],
+                            "sampleFieldsValues": {},
+                            "stats": {
+                                "count": 0,
+                                "storageSize": 4096,
+                                "avgObjSize": 0,
+                                "totalSize": 8192,
+                                "size": 0
+                            }
+                        },
+                        {
+                            "name": "alerts",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.543Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "nameType": "origin:string"
+                                },
+                                {
+                                    "nameType": "originType:string"
+                                },
+                                {
+                                    "nameType": "author:string"
+                                },
+                                {
+                                    "nameType": "severity:string"
+                                },
+                                {
+                                    "nameType": "priority:string"
+                                },
+                                {
+                                    "nameType": "emergency:string"
+                                },
+                                {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "nameType": "channels:array<string>"
+                                },
+                                {
+                                    "fields": [
+                                        {
+                                            "name": "destinationAddress",
+                                            "type": "string",
+                                            "nullable": false
+                                        },
+                                        {
+                                            "name": "destinationAdresssFormat",
+                                            "type": "string",
+                                            "nullable": false
+                                        },
+                                        {
+                                            "name": "message",
+                                            "type": "string",
+                                            "nullable": false
+                                        },
+                                        {
+                                            "name": "subject",
+                                            "type": "null",
+                                            "nullable": true
+                                        }
+                                    ],
+                                    "nameType": "body:object"
+                                },
+                                {
+                                    "nameType": "dateAdd:Date"
+                                },
+                                {
+                                    "nameType": "dateUpdate:Date"
+                                },
+                                {
+                                    "nameType": "history:array<any>"
+                                },
+                                {
+                                    "nameType": "status:string"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "originType": "nanodev.website",
+                                "severity": "high",
+                                "priority": "high",
+                                "emergency": "high",
+                                "channels": "sms",
+                                "body.destinationAdresssFormat": "PhoneNumber",
+                                "status": "created"
+                            },
+                            "stats": {
+                                "count": 3,
+                                "storageSize": 36864,
+                                "avgObjSize": 461,
+                                "totalSize": 73728,
+                                "size": 1383
+                            }
+                        },
+                        {
+                            "name": "processed_files_metadata",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.496Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "nameType": "slackUsers:mixed"
+                                },
+                                {
+                                    "nameType": "client:string"
+                                },
+                                {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "nameType": "deletedFilesTypes:array<string>"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "rawUuid:string"
+                                },
+                                {
+                                    "nameType": "fileName:string"
+                                },
+                                {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "nameType": "compressedFilesTypes:array<string>"
+                                },
+                                {
+                                    "nameType": "priority:string"
+                                },
+                                {
+                                    "nameType": "notes:string"
+                                },
+                                {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "nameType": "uploadedFilesTypes:array<string>"
+                                },
+                                {
+                                    "nameType": "emergency:string"
+                                },
+                                {
+                                    "nameType": "dateAdd:number"
+                                },
+                                {
+                                    "nameType": "dateUpdate:number"
+                                },
+                                {
+                                    "nameType": "driveFolderId:string"
+                                },
+                                {
+                                    "nameType": "slackThreadId:string"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "client": "admin-business|avanquest|bewave|booxi|constellio|laval|leya|vdbb|vircom|virtuose",
+                                "priority": "high|low|medium|now|today",
+                                "emergency": "default|high|later|medium|next-task|now|today",
+                                "compressedFilesTypes": "audioOnly|raw|video480p|video720p",
+                                "uploadedFilesTypes": "audioOnly|raw|video480p|video720p",
+                                "deletedFilesTypes": "audioOnly|raw|video480p|video720p"
+                            },
+                            "stats": {
+                                "count": 2454,
+                                "storageSize": 741376,
+                                "avgObjSize": 666,
+                                "totalSize": 999424,
+                                "size": 1634758
+                            }
+                        },
+                        {
+                            "name": "processed_files",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.424Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "nameType": "fileSizeMB:number"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "rawUuid:string"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "uuid:string"
+                                },
+                                {
+                                    "nameType": "sourceUrl:string"
+                                },
+                                {
+                                    "nameType": "dateAdd:number"
+                                },
+                                {
+                                    "nameType": "dateStartCompress:number"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "exportType:string"
+                                },
+                                {
+                                    "nameType": "fileExtension:string"
+                                },
+                                {
+                                    "nameType": "isCompressed:boolean"
+                                },
+                                {
+                                    "nameType": "isDeleted:boolean"
+                                },
+                                {
+                                    "nameType": "isUploaded:boolean"
+                                },
+                                {
+                                    "nameType": "dateEndCompress:number"
+                                },
+                                {
+                                    "nameType": "dateEndDelete:number"
+                                },
+                                {
+                                    "nameType": "dateEndUpload:number"
+                                },
+                                {
+                                    "nameType": "dateStartDelete:number"
+                                },
+                                {
+                                    "nameType": "dateStartUpload:number"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "exportType": "audioOnly|raw|video480p|video720p",
+                                "fileExtension": "m4a|mov|mp4",
+                                "isCompressed": "false|true",
+                                "isDeleted": "false|true",
+                                "isUploaded": "false|true"
+                            },
+                            "stats": {
+                                "count": 9796,
+                                "storageSize": 1454080,
+                                "avgObjSize": 467,
+                                "totalSize": 3072000,
+                                "size": 4575269
+                            }
+                        },
+                        {
+                            "name": "ek_events",
+                            "capped": false,
+                            "last_discovery_timestamp": "2025-06-19T05:49:11.484Z",
+                            "fields": [
+                                {
+                                    "isPrimaryKey": true,
+                                    "isIndexed": true,
+                                    "nameType": "_id:ObjectId"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "dateStart:Date"
+                                },
+                                {
+                                    "isIndexed": true,
+                                    "isUnique": true,
+                                    "nameType": "eventId:string"
+                                },
+                                {
+                                    "nameType": "client:string"
+                                },
+                                {
+                                    "nameType": "dateAdd:number"
+                                },
+                                {
+                                    "nameType": "dateEnd:Date"
+                                },
+                                {
+                                    "nameType": "dateUpdate:number"
+                                },
+                                {
+                                    "nameType": "isCanceled:boolean"
+                                },
+                                {
+                                    "nameType": "title:string"
+                                }
+                            ],
+                            "sampleFieldsValues": {
+                                "isAllDay": "false|true",
+                                "isCanceled": "false|true"
+                            },
+                            "stats": {
+                                "count": 3865,
+                                "storageSize": 679936,
+                                "avgObjSize": 305,
+                                "totalSize": 1089536,
+                                "size": 1182504
+                            }
+                        }
+                    ]
+                }
+            ],
+            "metadata": {
+                "executionTime": 1020,
+                "queryType": "mongodb",
+                "timestamp": "2025-06-19T05:49:11.707Z"
+            }
+        }
+    }
+}
