@@ -39,7 +39,7 @@ export const PROMPT_CONFIGS: Record<PromptName, PromptConfig> = {
 
 Given a database name and admin-level read access, your task is to generate the full structure of the database. The system should work with SQL databases (PostgreSQL, MySQL, etc.) and NoSQL databases (MongoDB, etc.).
 
-For SQL databases:
+For SQL and PostgreSQL databases:
 - Generate and execute all relevant queries to extract:
   - All tables and views
   - Columns and their data types

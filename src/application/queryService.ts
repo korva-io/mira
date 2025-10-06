@@ -36,13 +36,13 @@ export class QueryService {
         await this.cache.set(cacheKey, JSON.stringify(result.value), 3600); // Cache for 1 hour
       }
 
-      // Log the query
-      await this.logger.logQuery({
-        userId: input.userId,
-        nlQuery: input.nlQuery,
-        dbType: input.dbType,
-        result,
-      });
+      // // Log the query
+      // await this.logger.logQuery({
+      //   userId: input.userId,
+      //   nlQuery: input.nlQuery,
+      //   dbType: input.dbType,
+      //   result,
+      // });
 
       return result;
     } catch (error) {

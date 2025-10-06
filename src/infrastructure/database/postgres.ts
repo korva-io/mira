@@ -24,7 +24,7 @@ export class PostgresRepository implements DatabaseRepository {
       });
     } catch (error) {
       return err({
-        message: 'Failed to execute PostgreSQL query',
+        message: ('Failed to execute PostgreSQL query '+ error.message ),
         code: 'POSTGRES_ERROR',
         details: error,
       });

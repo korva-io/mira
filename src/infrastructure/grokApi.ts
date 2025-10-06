@@ -33,7 +33,7 @@ export class GrokApi implements AiService {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-1',
+          model: 'grok-3-mini',
           messages,
           temperature,
           max_tokens: maxTokens,
@@ -69,6 +69,7 @@ export class GrokApi implements AiService {
   ): Promise<Result<string, QueryError>> {
     const config = PROMPT_CONFIGS[promptName];
     const userPrompt = this.formatPrompt(config.userPromptTemplate, params);
+    console.log('user prompt get ', userPrompt);
 
     const result = await this.makeRequest([
       { role: 'system', content: config.systemPrompt },
@@ -93,7 +94,7 @@ export class GrokApi implements AiService {
       const schemaResult = await this.callPrompt(PromptName.SCHEMA_EXPLORER, {
         databaseName: dbType,
       });
-
+      console.log('schema result get ', schemaResult);
       if (schemaResult.isErr()) {
         return err({
           message: 'Failed to extract schema',
@@ -114,6 +115,8 @@ export class GrokApi implements AiService {
           details: queryResult.error,
         });
       }
+
+      console.log('query get ', queryResult);
 
       // Analyze the generated query
       const analysisResult = await this.callPrompt(PromptName.DATA_ANALYZER, {
@@ -139,7 +142,7 @@ export class GrokApi implements AiService {
           },
         ],
         metadata: {
-          model: 'grok-1',
+          model: 'grok-3-mini',
           schema: schemaResult.value,
           executionTime: 0, // This should be calculated based on actual execution time
           queryType: dbType,
