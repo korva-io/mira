@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { API_PREFIX } from './schemas';
 import { getConfig } from '../config';
-
+import fp from 'fastify-plugin';
 const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
   const { port, host } = getConfig();
 
@@ -41,4 +41,4 @@ const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
   });
 };
 
-export default swaggerPlugin;
+export default fp(swaggerPlugin);

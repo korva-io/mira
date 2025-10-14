@@ -33,7 +33,7 @@ export class GrokApi implements AiService {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-1',
+          model: 'grok-3-mini',
           messages,
           temperature,
           max_tokens: maxTokens,
@@ -69,6 +69,7 @@ export class GrokApi implements AiService {
   ): Promise<Result<string, QueryError>> {
     const config = PROMPT_CONFIGS[promptName];
     const userPrompt = this.formatPrompt(config.userPromptTemplate, params);
+    console.log('user prompt get ', userPrompt);
 
     const result = await this.makeRequest([
       { role: 'system', content: config.systemPrompt },
@@ -86,26 +87,17 @@ export class GrokApi implements AiService {
 
   async translateToQuery(
     nlQuery: string,
-    dbType: string
+    dbType: string,
+    schema?: string
   ): Promise<Result<QueryResult, QueryError>> {
     try {
-      // First, extract the database schema
-      const schemaResult = await this.callPrompt(PromptName.SCHEMA_EXPLORER, {
-        databaseName: dbType,
-      });
-
-      if (schemaResult.isErr()) {
-        return err({
-          message: 'Failed to extract schema',
-          code: 'SCHEMA_EXTRACTION_FAILED',
-          details: schemaResult.error,
-        });
-      }
+      // Use provided schema or generate a simple one
+      const schemaToUse = schema || JSON.stringify({ type: dbType, note: 'No schema provided' });
 
       // Generate the query using the schema
       const queryResult = await this.callPrompt(PromptName.QUERY_BUILDER, {
         nlQuery,
-        schema: schemaResult.value,
+        schema: schemaToUse,
       });
       if (queryResult.isErr()) {
         return err({
@@ -114,6 +106,8 @@ export class GrokApi implements AiService {
           details: queryResult.error,
         });
       }
+
+      console.log('query get ', queryResult);
 
       // Analyze the generated query
       const analysisResult = await this.callPrompt(PromptName.DATA_ANALYZER, {
@@ -139,8 +133,8 @@ export class GrokApi implements AiService {
           },
         ],
         metadata: {
-          model: 'grok-1',
-          schema: schemaResult.value,
+          model: 'grok-3-mini',
+          schema: schemaToUse,
           executionTime: 0, // This should be calculated based on actual execution time
           queryType: dbType,
           timestamp: now.toISOString(),
@@ -162,6 +156,40 @@ export class GrokApi implements AiService {
     return this.callPrompt(PromptName.INSIGHT_ENGINE, {
       failedQueries: JSON.stringify(failedQueries),
       schema,
+    });
+  }
+
+  async extractSchema(connectionString: string): Promise<Result<string, QueryError>> {
+    // Extract database name from connection string
+    let databaseName = 'unknown';
+    try {
+      if (connectionString.includes('mongodb')) {
+        const match = connectionString.match(/\/([^/?]+)(\?|$)/);
+        databaseName = (match && match[1]) || 'mongodb_database';
+      } else if (connectionString.includes('postgres')) {
+        const match = connectionString.match(/\/([^/?]+)(\?|$)/);
+        databaseName = (match && match[1]) || 'postgres_database';
+      }
+    } catch (e) {
+      // Use default if parsing fails
+    }
+
+    return this.callPrompt(PromptName.SCHEMA_EXPLORER, {
+      databaseName,
+    });
+  }
+
+  async generateQuery(nlQuery: string, schema: string): Promise<Result<string, QueryError>> {
+    return this.callPrompt(PromptName.QUERY_BUILDER, {
+      nlQuery,
+      schema,
+    });
+  }
+
+  async analyzeData(data: string, question: string): Promise<Result<string, QueryError>> {
+    return this.callPrompt(PromptName.DATA_ANALYZER, {
+      data,
+      question,
     });
   }
 }

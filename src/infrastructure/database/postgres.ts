@@ -1,33 +1,34 @@
 import { Pool } from 'pg';
 import { Result, err, ok } from 'neverthrow';
 import { DatabaseRepository } from '../interfaces';
-import { QueryError, QueryResult } from '../../domain/types';
+import { QueryError } from '../../domain/types';
 
 export class PostgresRepository implements DatabaseRepository {
-  private pool: Pool;
-
-  constructor() {
-    this.pool = new Pool({
-      connectionString: process.env.POSTGRES_CONNECTION_STRING,
-    });
-  }
-
-  async executeQuery(query: string): Promise<Result<QueryResult, QueryError>> {
+  async executeQuery(
+    query: string,
+    _dbType: string,
+    connectionString: string
+  ): Promise<Result<any[], QueryError>> {
+    let pool: Pool | null = null;
     try {
-      const result = await this.pool.query(query);
-      return ok({
-        data: result.rows,
-        metadata: {
-          rowCount: result.rowCount,
-          command: result.command,
-        },
+      // Create a new pool with the provided connection string
+      pool = new Pool({
+        connectionString,
       });
-    } catch (error) {
+
+      const result = await pool.query(query);
+      return ok(result.rows);
+    } catch (error: any) {
       return err({
-        message: 'Failed to execute PostgreSQL query',
+        message: `Failed to execute PostgreSQL query: ${error.message}`,
         code: 'POSTGRES_ERROR',
         details: error,
       });
+    } finally {
+      // Clean up the connection
+      if (pool) {
+        await pool.end();
+      }
     }
   }
 }

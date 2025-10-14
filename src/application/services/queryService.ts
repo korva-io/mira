@@ -1,5 +1,5 @@
 import { Result, err, ok } from 'neverthrow';
-import { GrokApi, GrokApiError } from '../../infrastructure/utils/grokApi';
+import { GrokApi } from '../../infrastructure/grokApi';
 import { DatabaseRepository } from '../../infrastructure/interfaces';
 import { QueryError, QueryResult } from '../../domain/types';
 
@@ -59,9 +59,12 @@ export class QueryService {
             }
 
             return ok({
-                query: queryResult.value,
-                result: executionResult.value,
-                analysis: JSON.parse(analysisResult.value),
+                data: executionResult.value,
+                metadata: {
+                    executionTime: 0,
+                    queryType: dbType,
+                    timestamp: new Date().toISOString(),
+                },
             });
         } catch (error) {
             return err({
@@ -86,8 +89,8 @@ export class QueryService {
             }
 
             // Generate insights
-            const insightsResult = await this.grokApi.generateInsights(
-                JSON.stringify(failedQueries),
+            const insightsResult = await this.grokApi.generateSchemaInsights(
+                failedQueries,
                 schemaResult.value,
             );
             if (insightsResult.isErr()) {
