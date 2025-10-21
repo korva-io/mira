@@ -41,20 +41,21 @@ export class GrokApi implements AiService {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
         return err({
           message: `Grok API error: ${response.statusText}`,
           code: 'GROK_API_ERROR',
-          details: `HTTP ${response.status}`,
+          details: `HTTP ${response.status}: ${errorText}`,
         });
       }
 
       const data = (await response.json()) as GrokResponse;
       return ok(data);
-    } catch (error) {
+    } catch (error: any) {
       return err({
         message: 'Failed to communicate with Grok API',
         code: 'GROK_API_ERROR',
-        details: error,
+        details: error.message || error,
       });
     }
   }
@@ -69,7 +70,6 @@ export class GrokApi implements AiService {
   ): Promise<Result<string, QueryError>> {
     const config = PROMPT_CONFIGS[promptName];
     const userPrompt = this.formatPrompt(config.userPromptTemplate, params);
-    console.log('user prompt get ', userPrompt);
 
     const result = await this.makeRequest([
       { role: 'system', content: config.systemPrompt },
@@ -107,7 +107,6 @@ export class GrokApi implements AiService {
         });
       }
 
-      console.log('query get ', queryResult);
 
       // Analyze the generated query
       const analysisResult = await this.callPrompt(PromptName.DATA_ANALYZER, {

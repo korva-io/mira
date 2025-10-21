@@ -7,12 +7,22 @@ export class SchemaExtractor {
   async extractPostgresSchema(connectionString: string): Promise<Result<string, QueryError>> {
     let pool: Pool | null = null;
     try {
-      console.log('🔗 Connecting to PostgreSQL...');
-      pool = new Pool({ connectionString });
+      
+      // Remove channel_binding parameter as it's not supported by node-postgres
+      const cleanConnectionString = connectionString.replace(/[&?]channel_binding=\w+/g, '');
+      
+      pool = new Pool({ 
+        connectionString: cleanConnectionString,
+        connectionTimeoutMillis: 10000, 
+        idleTimeoutMillis: 30000,
+        max: 3,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      });
       
       // Test the connection first
       await pool.query('SELECT 1');
-      console.log('✅ PostgreSQL connection successful');
 
       // Extract tables and columns
       const tablesQuery = `
@@ -117,10 +127,8 @@ export class SchemaExtractor {
   async extractMongoSchema(connectionString: string): Promise<Result<string, QueryError>> {
     let client: MongoClient | null = null;
     try {
-      console.log('🔗 Connecting to MongoDB...');
       client = new MongoClient(connectionString);
       await client.connect();
-      console.log('✅ MongoDB connection successful');
 
       const db = client.db();
       const collections = await db.listCollections().toArray();

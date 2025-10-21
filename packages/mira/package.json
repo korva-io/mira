@@ -1,0 +1,43 @@
+{
+  "name": "@korva/mira",
+  "version": "1.0.0",
+  "description": "Client SDK for Mira - Natural language to database query API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && terser dist/index.js -o dist/index.min.js --compress --mangle",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mira",
+    "korva",
+    "natural-language",
+    "database",
+    "query",
+    "sql",
+    "mongodb"
+  ],
+  "author": "Korva",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "zod": "^3.23.8",
+    "neverthrow": "^7.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "terser": "^5.27.0",
+    "@types/node": "^20.11.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/korva-io/mira.git",
+    "directory": "packages/mira"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

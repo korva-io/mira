@@ -90,4 +90,41 @@ export class QueryService {
       } as QueryError);
     }
   }
+
+  async generateSchemaInsights(
+    failedQueries: string[],
+    connectionString: string
+  ): Promise<Result<string, QueryError>> {
+    try {
+      // Extract the current schema
+      const schemaResult = await this.schemaExtractor.extractSchema(
+        connectionString,
+        'postgres' // Default to postgres, could be enhanced to detect from connection string
+      );
+      if (schemaResult.isErr()) {
+        return err({
+          code: 'SCHEMA_EXTRACTION_FAILED',
+          message: schemaResult.error.message,
+        });
+      }
+
+      // Generate insights using AI
+      const prompt = `Given the following database schema:\n${JSON.stringify(schemaResult.value, null, 2)}\n\nAnd these failed queries:\n${failedQueries.join('\n')}\n\nProvide insights on how to improve the schema to better support these queries.`;
+      
+      const insightsResult = await this.ai.translateToQuery(prompt, 'postgres', schemaResult.value);
+      if (insightsResult.isErr()) {
+        return err({
+          code: 'INSIGHTS_GENERATION_FAILED',
+          message: insightsResult.error.message,
+        });
+      }
+
+      return ok(JSON.stringify(insightsResult.value));
+    } catch (error) {
+      return err({
+        code: 'UNEXPECTED_ERROR',
+        message: error instanceof Error ? error.message : 'An unexpected error occurred',
+      });
+    }
+  }
 }
