@@ -36,7 +36,12 @@ export class Mira {
       });
       return ok(response.data.data);
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to execute query';
+      const message = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to execute query';
+      console.error('Mira API Error Details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       return err(new AppError('API_ERROR', message));
     }
   }
