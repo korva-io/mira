@@ -76,7 +76,7 @@ export class GrokApi implements AiService {
       { role: 'user', content: userPrompt },
     ]);
 
-    return result.map((response) => {
+    return result.map((response: GrokResponse) => {
       const content = response.choices[0]?.message.content;
       if (!content) {
         throw new Error('No content in response');
