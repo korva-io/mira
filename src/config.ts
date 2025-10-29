@@ -21,7 +21,7 @@ export const envSchema = {
     },
     HOST: {
       type: 'string',
-      default: '127.0.0.1',
+      default: '0.0.0.0',
     },
     POSTGRES_CONNECTION_STRING: {
       type: 'string',
@@ -50,7 +50,7 @@ export const envSchema = {
 // Zod schema for type safety
 export const zodEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.string().default('4000'),
+  PORT: z.coerce.number().default(4000),
   HOST: z.string().default('0.0.0.0'),
   POSTGRES_CONNECTION_STRING: z.string(),
   MONGODB_CONNECTION_STRING: z.string(),
@@ -65,7 +65,7 @@ export type EnvConfig = z.infer<typeof zodEnvSchema>;
 export function getConfig(): { port: number; host: string } {
   const config = process.env as unknown as EnvConfig;
   return {
-    port: parseInt(config.PORT, 10),
+    port: config.PORT,
     host: config.HOST || '0.0.0.0',
   };
 } 
