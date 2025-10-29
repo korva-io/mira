@@ -51,7 +51,7 @@ export const envSchema = {
 export const zodEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.string().default('4000'),
-  HOST: z.string().default('127.0.0.1'),
+  HOST: z.string().default('0.0.0.0'),
   POSTGRES_CONNECTION_STRING: z.string(),
   MONGODB_CONNECTION_STRING: z.string(),
   MONGODB_DB_NAME: z.string().default('mira'),
@@ -66,6 +66,6 @@ export function getConfig(): { port: number; host: string } {
   const config = process.env as unknown as EnvConfig;
   return {
     port: parseInt(config.PORT, 10),
-    host: config.HOST || '127.0.0.1',
+    host: config.HOST || '0.0.0.0',
   };
 } 
