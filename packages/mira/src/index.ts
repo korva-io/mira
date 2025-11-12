@@ -6,7 +6,12 @@ const QueryInputSchema = z.object({
   dbType: z.enum(['postgres', 'mongodb']),
   connectionString: z.string(),
   nlQuery: z.string(),
-  userId: z.string()
+  userId: z.string(),
+  configuration: z.object({
+    outputKeyFormat: z.enum(['camelCase', 'snake_case', 'PascalCase', 'kebab-case', 'original']).optional(),
+    maxResults: z.number().optional(),
+    timeout: z.number().optional(),
+  }).optional(), 
 });
 
 type QueryInput = z.infer<typeof QueryInputSchema>;
