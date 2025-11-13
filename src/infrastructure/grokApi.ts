@@ -22,8 +22,8 @@ export class GrokApi implements AiService {
 
   private async makeRequest(
     messages: Array<{ role: 'system' | 'user'; content: string }>,
-    temperature = 0.7,
-    maxTokens = 2000
+    temperature = 0.0, // ← Déterminisme
+    maxTokens = 4096 // ← Plus de marge
   ): Promise<Result<GrokResponse, QueryError>> {
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -37,6 +37,7 @@ export class GrokApi implements AiService {
           messages,
           temperature,
           max_tokens: maxTokens,
+          response_format: { type: 'json_object' }, // ← FORCER JSON
         }),
       });
 
@@ -60,13 +61,18 @@ export class GrokApi implements AiService {
     }
   }
 
-  private formatPrompt(template: string, params: Record<string, string>): string {
-    return template.replace(/\{(\w+)\}/g, (_, key) => params[key as keyof typeof params] || '');
+  // Supporte les objets dans les placeholders
+  private formatPrompt(template: string, params: Record<string, string | object>): string {
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+      const value = params[key];
+      if (value === undefined) return '';
+      return typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+    });
   }
 
   private async callPrompt(
     promptName: PromptName,
-    params: Record<string, string>
+    params: Record<string, string | object>
   ): Promise<Result<string, QueryError>> {
     const config = PROMPT_CONFIGS[promptName];
     const userPrompt = this.formatPrompt(config.userPromptTemplate, params);
@@ -76,12 +82,12 @@ export class GrokApi implements AiService {
       { role: 'user', content: userPrompt },
     ]);
 
-    return result.map((response: GrokResponse) => {
-      const content = response.choices[0]?.message.content;
+    return result.andThen((response: GrokResponse) => {
+      const content = response.choices[0]?.message?.content;
       if (!content) {
-        throw new Error('No content in response');
+        return err({ message: 'Empty response from AI', code: 'AI_EMPTY_RESPONSE' });
       }
-      return content;
+      return ok(content.trim());
     });
   }
 
@@ -91,14 +97,15 @@ export class GrokApi implements AiService {
     schema?: string
   ): Promise<Result<QueryResult, QueryError>> {
     try {
-      // Use provided schema or generate a simple one
-      const schemaToUse = schema || JSON.stringify({ type: dbType, note: 'No schema provided' });
+      const schemaToUse = schema || JSON.stringify({ type: dbType });
 
-      // Generate the query using the schema
       const queryResult = await this.callPrompt(PromptName.QUERY_BUILDER, {
         nlQuery,
         schema: schemaToUse,
       });
+
+      console.log("api query result ", queryResult);
+
       if (queryResult.isErr()) {
         return err({
           message: 'Failed to generate query',
@@ -107,36 +114,14 @@ export class GrokApi implements AiService {
         });
       }
 
-
-      // Analyze the generated query
-      const analysisResult = await this.callPrompt(PromptName.DATA_ANALYZER, {
-        data: queryResult.value,
-        question: nlQuery,
-      });
-      if (analysisResult.isErr()) {
-        return err({
-          message: 'Failed to analyze query',
-          code: 'QUERY_ANALYSIS_FAILED',
-          details: analysisResult.error,
-        });
-      }
-
-      const now = new Date();
-      const analysis = JSON.parse(analysisResult.value) as Record<string, unknown>;
-
+      // RETOURNE UNIQUEMENT LA REQUÊTE SQL COMME CHAÎNE
       return ok({
-        data: [
-          {
-            query: queryResult.value,
-            analysis,
-          },
-        ],
+        data: [{ query: queryResult.value.trim() }], // ← SQL pur
         metadata: {
+          executionTime: 0, // Adding the required executionTime property
           model: 'grok-3-mini',
-          schema: schemaToUse,
-          executionTime: 0, // This should be calculated based on actual execution time
           queryType: dbType,
-          timestamp: now.toISOString(),
+          timestamp: new Date().toISOString(),
         },
       });
     } catch (error) {
@@ -185,10 +170,15 @@ export class GrokApi implements AiService {
     });
   }
 
-  async analyzeData(data: string, question: string): Promise<Result<string, QueryError>> {
+  async analyzeData(
+    data: string,
+    question: string,
+    configuration: Record<string, unknown> = {}
+  ): Promise<Result<string, QueryError>> {
     return this.callPrompt(PromptName.DATA_ANALYZER, {
       data,
       question,
+      configuration,
     });
   }
 }

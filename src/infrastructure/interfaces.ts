@@ -16,6 +16,7 @@ export interface CacheService {
 
 export interface AiService {
   translateToQuery(nlQuery: string, dbType: string, schema?: string): Promise<QueryResultType>;
+  analyzeData(data: string, question: string, configuration?: Record<string, unknown>): Promise<Result<string, QueryError>>;
 }
 
 export interface Logger {

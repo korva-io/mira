@@ -4,6 +4,7 @@ export type DbType = 'postgres' | 'mongodb';
 
 export interface QueryResult {
   data: Record<string, unknown>[];
+  comment?: string;  // Make it optional
   metadata: {
     executionTime: number;
     queryType: string;
