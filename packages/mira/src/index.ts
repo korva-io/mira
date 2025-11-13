@@ -39,7 +39,7 @@ export class Mira {
       const response = await axios.post(`${this.baseUrl}/query`, parseResult.data, {
         headers: { Authorization: `Bearer ${this.apiKey}` }
       });
-      return ok(response.data.data);
+      return ok(response.data);
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to execute query';
       console.error('Mira API Error Details:', {

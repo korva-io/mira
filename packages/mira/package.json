@@ -1,6 +1,6 @@
 {
-  "name": "@korva/mira",
-  "version": "1.1.0",
+  "name": "@korvaio/mira",
+  "version": "1.1.1",
   "description": "Client SDK for Mira - Natural language to database query API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
