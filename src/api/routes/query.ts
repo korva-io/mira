@@ -44,12 +44,17 @@ const queryRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.status(400).send({ error: parseResult.error.message });
       }
 
+
       const result = await queryService.executeQuery(parseResult.data);
       if (result.isErr()) {
         return reply.status(500).send({ error: result.error.message });
       }
 
-      return { data: result.value.data };
+      return {
+        data: result.value.data,
+        metadata: result.value.metadata,
+        ___miraNotes: result.value.___miraNotes,
+      };
     }
   );
 

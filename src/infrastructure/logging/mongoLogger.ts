@@ -7,8 +7,8 @@ export class MongoLogger implements Logger {
   private dbName: string;
 
   constructor() {
-    this.client = new MongoClient(process.env.MONGODB_CONNECTION_STRING || '');
-    this.dbName = process.env.MONGODB_DB_NAME || 'mira';
+    this.client = new MongoClient(process.env['MONGODB_CONNECTION_STRING'] || '');
+    this.dbName = process.env['MONGODB_DB_NAME'] || 'mira';
   }
 
   async logQuery(params: {

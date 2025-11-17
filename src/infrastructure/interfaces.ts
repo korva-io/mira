@@ -1,7 +1,11 @@
-import { QueryResultType } from '../domain/types';
+import { Result } from 'neverthrow';
+import { QueryError, QueryResultType } from '../domain/types';
 
 export interface DatabaseRepository {
-  executeQuery(query: string): Promise<QueryResultType>;
+  executeQuery(
+    query: string,
+    connectionString: string
+  ): Promise<Result<any[], QueryError>>;
 }
 
 export interface CacheService {
@@ -10,14 +14,16 @@ export interface CacheService {
 }
 
 export interface AiService {
-  translateToQuery(nlQuery: string, dbType: string): Promise<QueryResultType>;
+  translateToQuery(nlQuery: string, connectionString: string, schema?: string): Promise<QueryResultType>;
+  analyzeData(data: string, question: string, configuration?: Record<string, unknown>): Promise<Result<string, QueryError>>;
+  analyzeAndFormat(data: string, question: string, configuration?: Record<string, unknown>): Promise<Result<string, QueryError>>;
+  extractSchema(connectionString: string): Promise<Result<string, QueryError>>;
 }
 
 export interface Logger {
   logQuery(input: {
     userId: string;
     nlQuery: string;
-    dbType: string;
     result: QueryResultType;
   }): Promise<void>;
 }

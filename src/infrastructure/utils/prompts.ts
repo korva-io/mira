@@ -2,10 +2,16 @@ export enum PromptName {
   SCHEMA_EXPLORER = 'SCHEMA_EXPLORER',
   QUERY_BUILDER = 'QUERY_BUILDER',
   DATA_ANALYZER = 'DATA_ANALYZER',
+  DATA_FORMATTER = 'DATA_FORMATTER',
   INSIGHT_ENGINE = 'INSIGHT_ENGINE',
 }
 
-export const PROMPTS = {
+export const PROMPTS: Record<PromptName, {
+  name: string;
+  description: string;
+  systemPrompt?: string;
+  userPromptTemplate?: string;
+}> = {
   [PromptName.SCHEMA_EXPLORER]: {
     name: 'korva.mira.schema_explorer',
     description: 'Extract full database schema as a graph',
@@ -21,6 +27,10 @@ export const PROMPTS = {
   [PromptName.INSIGHT_ENGINE]: {
     name: 'korva.mira.insight_engine',
     description: 'Generate schema improvement recommendations',
+  },
+  [PromptName.DATA_FORMATTER]: {
+    name: 'korva.mira.data_formatter',
+    description: 'Format raw database results into strict API responses',
   },
 } as const;
 
@@ -39,7 +49,7 @@ export const PROMPT_CONFIGS: Record<PromptName, PromptConfig> = {
 
 Given a database name and admin-level read access, your task is to generate the full structure of the database. The system should work with SQL databases (PostgreSQL, MySQL, etc.) and NoSQL databases (MongoDB, etc.).
 
-For SQL databases:
+For SQL and PostgreSQL databases:
 - Generate and execute all relevant queries to extract:
   - All tables and views
   - Columns and their data types
@@ -64,42 +74,81 @@ Return the result as structured JSON, formatted like a graph with nodes (entitie
   [PromptName.QUERY_BUILDER]: {
     name: PROMPTS[PromptName.QUERY_BUILDER].name,
     description: PROMPTS[PromptName.QUERY_BUILDER].description,
-    systemPrompt: `You are a smart database query generator.
+    systemPrompt: `You are a smart, robust database query generator.
 
 Given:
-- A user prompt written in natural language
-- The full structure of the database in JSON (as extracted from korva.mira.schema_explorer)
+- Natural language query
+- Database schema (JSON)
+- Configuration object with returnType, sort, filters, limit, keys, format, locale, custom
 
-You must return a single, raw and optimized query (SQL or NoSQL depending on the source) that will retrieve exactly the data the user is asking for.
+RULES (STRICT, NO EXCEPTIONS):
 
-Guidelines:
-- If multiple tables or collections are involved, build the necessary joins or cross-references
-- If a specific status is requested but not present, infer it using logical conditions between columns (e.g. \`delivery_date_expected < CURRENT_DATE AND delivery_date_actual IS NULL\`)
-- Always include a consistent default \`ORDER BY\` clause (by ID, date, or a meaningful column), even if not asked
-- Do not return any explanation or interpretation — only the raw query`,
-    userPromptTemplate: 'Generate a query for: {nlQuery}\n\nDatabase schema: {schema}',
+1. **KEY NAMING CONVENTIONS**:
+   - Incoming filters use config.keys.input (default: camelCase)
+   - Map to config.keys.database (default: snake_case) in SQL/Mongo
+   - Output columns must follow config.keys.output
+
+2. **returnType: "scalar"** → **ONLY one aggregate**, no ORDER BY
+3. **returnType: "array"** → SELECT * ... ORDER BY ...
+4. **returnType: "object"** → SELECT * ... LIMIT 1
+
+5. **SORTING**:
+   - Apply only if returnType !== "scalar"
+   - Use config.sort.field (mapped via keys.database)
+   - Else → auto-detect date field (created_at, etc.) in database naming
+
+6. **FILTERS & LIMIT/OFFSET**: as before
+
+7. **CUSTOM & META**: respect all custom rules
+
+Return **ONLY the raw query** in correct naming convention. No JSON, no explanation.
+`,
+    userPromptTemplate: `Generate a query for: {nlQuery}
+
+Schema: {schema}
+
+Configuration: {configuration}`,
   },
   [PromptName.DATA_ANALYZER]: {
     name: PROMPTS[PromptName.DATA_ANALYZER].name,
     description: PROMPTS[PromptName.DATA_ANALYZER].description,
-    systemPrompt: `You are a data interpreter and visual presentation engine.
-
-Given:
-- Raw data output from a SQL or NoSQL query (array of objects)
-- The original user question
+    systemPrompt: `You are a data analysis engine for database query results.
 
 Your job is to:
-1. Determine the best format for presenting the data to the user (table, chart, plain text, summary, visual, etc.)
-2. Add a key \`mira_note\` to each row with a short, intelligent annotation (e.g., "Late delivery by 7 days", "Top customer", "Low volume order")
-3. Return a summary of the insight in natural language (e.g., "3 deliveries were late last week. The average delay was 6.5 days.")
-4. Include a \`meta\` block at the end, with:
-   - The default ordering used
-   - Filters inferred or applied
-   - Estimated query complexity
-   - Data freshness or consistency
+- Summarize the key facts and insights from the provided data
+- Detect anomalies, outliers, or missing values
+- Suggest possible improvements or next questions
+- Output a JSON object with:
+  - insights: string (summary)
+  - stats: object (optional, e.g., min, max, avg, count)
+  - anomalies: array (optional)
+  - comment: string (short, ≤120 chars)
 
-Return all this as a single structured JSON object.`,
-    userPromptTemplate: 'Analyze this data: {data}\n\nOriginal question: {question}',
+Be concise and accurate.`,
+    userPromptTemplate: `Data: {data}
+Question: {question}
+Configuration: {configuration}`,
+  },
+  [PromptName.DATA_FORMATTER]: {
+    name: PROMPTS[PromptName.DATA_FORMATTER].name,
+    description: PROMPTS[PromptName.DATA_FORMATTER].description,
+    systemPrompt: `You are a strict API response formatter for database query results.
+Your job is to:
+- Take the raw data, user question, configuration, and analysis (insights, stats, comment, etc.)
+- Output a JSON object matching EXACTLY this discriminated union:
+  If returnType === "scalar" → { "value": <number|string|boolean> }
+  If returnType === "object" → { "rows": [ <one object> ] }
+  If returnType === "array" → { "rows": [ <multiple objects> ] }
+  If empty → { "rows": [], "comment": "Aucun résultat." }
+- NEVER mix value and rows
+- Include meta: { default_ordering, configuration, filters_applied, query_complexity, data_freshness, presentation_format }
+- Include comment (max 120 chars) in meta
+- DO NOT add any extra fields or explanations
+- Return exactly one JSON object.`,
+    userPromptTemplate: `Data: {data}
+Question: {question}
+Configuration: {configuration}
+Analysis: {analysis}`,
   },
   [PromptName.INSIGHT_ENGINE]: {
     name: PROMPTS[PromptName.INSIGHT_ENGINE].name,

@@ -1,6 +1,6 @@
 {
-    "name": "@korva.io/mira",
-    "version": "1.0.0",
+    "name": "@korvaio/mira",
+    "version": "1.1.1",
     "description": "AI-powered database query interpreter",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -15,21 +15,21 @@
     },
     "dependencies": {
         "@fastify/env": "^4.2.0",
-        "@fastify/swagger": "^8.12.1",
+        "@fastify/swagger": "^8.15.0",
         "@fastify/swagger-ui": "^1.10.1",
         "axios": "^1.6.2",
         "fastify": "^4.24.3",
         "ioredis": "^5.3.2",
         "jsonwebtoken": "^9.0.2",
         "mongodb": "^6.3.0",
-        "neverthrow": "^6.1.0",
+        "neverthrow": "^8.2.0",
         "pg": "^8.11.3",
         "redis": "^5.5.6",
         "zod": "^3.22.4"
     },
     "devDependencies": {
         "@types/jsonwebtoken": "^9.0.5",
-        "@types/node": "^20.10.0",
+        "@types/node": "^20.19.23",
         "@types/pg": "^8.10.9",
         "@typescript-eslint/eslint-plugin": "^6.13.1",
         "@typescript-eslint/parser": "^6.13.1",

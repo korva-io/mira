@@ -22,8 +22,8 @@ export class GrokApi implements AiService {
 
   private async makeRequest(
     messages: Array<{ role: 'system' | 'user'; content: string }>,
-    temperature = 0.7,
-    maxTokens = 2000
+    temperature = 0.0, // ← Déterminisme
+    maxTokens = 4096 // ← Plus de marge
   ): Promise<Result<GrokResponse, QueryError>> {
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -33,39 +33,46 @@ export class GrokApi implements AiService {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-1',
+          model: 'grok-3-mini',
           messages,
           temperature,
           max_tokens: maxTokens,
+          response_format: { type: 'json_object' }, // ← FORCER JSON
         }),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
         return err({
           message: `Grok API error: ${response.statusText}`,
           code: 'GROK_API_ERROR',
-          details: `HTTP ${response.status}`,
+          details: `HTTP ${response.status}: ${errorText}`,
         });
       }
 
       const data = (await response.json()) as GrokResponse;
       return ok(data);
-    } catch (error) {
+    } catch (error: any) {
       return err({
         message: 'Failed to communicate with Grok API',
         code: 'GROK_API_ERROR',
-        details: error,
+        details: error.message || error,
       });
     }
   }
 
-  private formatPrompt(template: string, params: Record<string, string>): string {
-    return template.replace(/\{(\w+)\}/g, (_, key) => params[key as keyof typeof params] || '');
+  // Supporte les objets dans les placeholders
+  private formatPrompt(template: string, params: Record<string, string | object>): string {
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+      const value = params[key];
+      if (value === undefined) return '';
+      return typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+    });
   }
 
   private async callPrompt(
     promptName: PromptName,
-    params: Record<string, string>
+    params: Record<string, string | object>
   ): Promise<Result<string, QueryError>> {
     const config = PROMPT_CONFIGS[promptName];
     const userPrompt = this.formatPrompt(config.userPromptTemplate, params);
@@ -75,38 +82,29 @@ export class GrokApi implements AiService {
       { role: 'user', content: userPrompt },
     ]);
 
-    return result.map((response) => {
-      const content = response.choices[0]?.message.content;
+    return result.andThen((response: GrokResponse) => {
+      const content = response.choices[0]?.message?.content;
       if (!content) {
-        throw new Error('No content in response');
+        return err({ message: 'Empty response from AI', code: 'AI_EMPTY_RESPONSE' });
       }
-      return content;
+      return ok(content.trim());
     });
   }
 
   async translateToQuery(
     nlQuery: string,
-    dbType: string
+    connectionString: string,
+    schema?: string
   ): Promise<Result<QueryResult, QueryError>> {
+    const dbType = connectionString.includes('postgres') ? 'postgres' : 'mongodb';
     try {
-      // First, extract the database schema
-      const schemaResult = await this.callPrompt(PromptName.SCHEMA_EXPLORER, {
-        databaseName: dbType,
-      });
+      const schemaToUse = schema || JSON.stringify({ type: dbType });
 
-      if (schemaResult.isErr()) {
-        return err({
-          message: 'Failed to extract schema',
-          code: 'SCHEMA_EXTRACTION_FAILED',
-          details: schemaResult.error,
-        });
-      }
-
-      // Generate the query using the schema
       const queryResult = await this.callPrompt(PromptName.QUERY_BUILDER, {
         nlQuery,
-        schema: schemaResult.value,
+        schema: schemaToUse,
       });
+
       if (queryResult.isErr()) {
         return err({
           message: 'Failed to generate query',
@@ -115,35 +113,19 @@ export class GrokApi implements AiService {
         });
       }
 
-      // Analyze the generated query
-      const analysisResult = await this.callPrompt(PromptName.DATA_ANALYZER, {
-        data: queryResult.value,
-        question: nlQuery,
-      });
-      if (analysisResult.isErr()) {
-        return err({
-          message: 'Failed to analyze query',
-          code: 'QUERY_ANALYSIS_FAILED',
-          details: analysisResult.error,
-        });
-      }
-
-      const now = new Date();
-      const analysis = JSON.parse(analysisResult.value) as Record<string, unknown>;
-
+      // RETOURNE UNIQUEMENT LA REQUÊTE SQL COMME CHAÎNE, avec metadonnées conformes
+      const sql = queryResult.value.trim();
+      const complexity = sql.length > 200 ? 'high' : sql.includes('JOIN') ? 'medium' : 'low';
       return ok({
-        data: [
-          {
-            query: queryResult.value,
-            analysis,
-          },
-        ],
+        data: [{ query: sql }],
         metadata: {
-          model: 'grok-1',
-          schema: schemaResult.value,
-          executionTime: 0, // This should be calculated based on actual execution time
+          executionTime: 0,
           queryType: dbType,
-          timestamp: now.toISOString(),
+          timestamp: new Date().toISOString(),
+          resultType: 'aggregation',
+          sqlQuery: sql,
+          queryComplexity: complexity as 'low' | 'medium' | 'high',
+          dataFreshness: 'n/a',
         },
       });
     } catch (error) {
@@ -163,5 +145,69 @@ export class GrokApi implements AiService {
       failedQueries: JSON.stringify(failedQueries),
       schema,
     });
+  }
+
+  async extractSchema(
+    connectionString: string
+  ): Promise<Result<string, QueryError>> {
+    const dbType = connectionString.includes('postgres') ? 'postgres' : 'mongodb';
+    // Extract database name from connection string
+    let databaseName = 'unknown';
+    try {
+      if (connectionString.includes('mongodb')) {
+        const match = connectionString.match(/\/([^/?]+)(\?|$)/);
+        databaseName = (match && match[1]) || 'mongodb_database';
+      } else if (connectionString.includes('postgres')) {
+        const match = connectionString.match(/\/([^/?]+)(\?|$)/);
+        databaseName = (match && match[1]) || 'postgres_database';
+      }
+    } catch (e) {
+      // Use default if parsing fails
+    }
+
+    return this.callPrompt(PromptName.SCHEMA_EXPLORER, {
+      databaseName,
+    });
+  }
+
+  async generateQuery(nlQuery: string, schema: string): Promise<Result<string, QueryError>> {
+    return this.callPrompt(PromptName.QUERY_BUILDER, {
+      nlQuery,
+      schema,
+    });
+  }
+
+  async analyzeData(
+    data: string,
+    question: string,
+    configuration: Record<string, unknown> = {}
+  ): Promise<Result<string, QueryError>> {
+    return this.callPrompt(PromptName.DATA_ANALYZER, {
+      data,
+      question,
+      configuration,
+    });
+  }
+
+  async analyzeAndFormat(
+    data: string,
+    question: string,
+    configuration: Record<string, unknown> = {}
+  ): Promise<Result<string, QueryError>> {
+    // 1. Analyse
+    const analysisResult = await this.callPrompt(PromptName.DATA_ANALYZER, {
+      data,
+      question,
+      configuration,
+    });
+    if (analysisResult.isErr()) return analysisResult;
+    // 2. Formatage
+    const formatResult = await this.callPrompt(PromptName.DATA_FORMATTER, {
+      data,
+      question,
+      configuration,
+      analysis: analysisResult.value,
+    });
+    return formatResult;
   }
 }
