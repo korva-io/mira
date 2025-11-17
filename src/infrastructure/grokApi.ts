@@ -93,9 +93,10 @@ export class GrokApi implements AiService {
 
   async translateToQuery(
     nlQuery: string,
-    dbType: string,
+    connectionString: string,
     schema?: string
   ): Promise<Result<QueryResult, QueryError>> {
+    const dbType = connectionString.includes('postgres') ? 'postgres' : 'mongodb';
     try {
       const schemaToUse = schema || JSON.stringify({ type: dbType });
 
@@ -146,7 +147,10 @@ export class GrokApi implements AiService {
     });
   }
 
-  async extractSchema(connectionString: string): Promise<Result<string, QueryError>> {
+  async extractSchema(
+    connectionString: string
+  ): Promise<Result<string, QueryError>> {
+    const dbType = connectionString.includes('postgres') ? 'postgres' : 'mongodb';
     // Extract database name from connection string
     let databaseName = 'unknown';
     try {

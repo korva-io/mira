@@ -6,7 +6,6 @@ import { QueryError } from '../../domain/types';
 export class MongoRepository implements DatabaseRepository {
   async executeQuery(
     query: string,
-    _dbType: string,
     connectionString: string
   ): Promise<Result<any[], QueryError>> {
     let client: MongoClient | null = null;

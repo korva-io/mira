@@ -35,7 +35,6 @@ export interface QueryConfiguration {
  * Query input with strict typing
  */
 export interface QueryInput {
-  readonly dbType: DatabaseType;
   readonly connectionString: string;
   readonly nlQuery: string;
   readonly userId: string;

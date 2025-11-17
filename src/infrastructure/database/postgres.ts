@@ -6,7 +6,6 @@ import { QueryError } from '../../domain/types';
 export class PostgresRepository implements DatabaseRepository {
   async executeQuery(
     query: string,
-    _dbType: string,
     connectionString: string
   ): Promise<Result<any[], QueryError>> {
     let pool: Pool | null = null;

@@ -29,7 +29,7 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Test database connection endpoint
   fastify.post<{
-    Body: { connectionString: string; dbType: 'postgres' | 'mongodb' };
+    Body: { connectionString: string };
   }>(
     `${API_PREFIX}/test-connection`,
     {
@@ -39,10 +39,9 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
         description: 'Tests if a database connection string is valid',
         body: {
           type: 'object',
-          required: ['connectionString', 'dbType'],
+          required: ['connectionString'],
           properties: {
             connectionString: { type: 'string' },
-            dbType: { type: 'string', enum: ['postgres', 'mongodb'] },
           },
         },
         response: {
@@ -51,7 +50,16 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
             properties: {
               success: { type: 'boolean' },
               message: { type: 'string' },
+              dbType: { type: 'string', enum: ['postgres', 'mongodb'] },
               schema: { type: 'string' },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              error: { type: 'string' },
+              details: { type: 'object' },
             },
           },
           500: {
@@ -66,15 +74,19 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { connectionString, dbType } = request.body;
+      const { connectionString } = request.body;
       const extractor = new SchemaExtractor();
 
       try {
-        const result = await extractor.extractSchema(connectionString, dbType);
+        // Détecter automatiquement le type de base de données
+        const dbType = connectionString.includes('postgres') ? 'postgres' : 'mongodb';
+        
+        const result = await extractor.extractSchema(connectionString);
 
         if (result.isOk()) {
           return {
             success: true,
+            dbType, // Retourne le type de base de données détecté
             message: `Successfully connected to ${dbType} database`,
             schema: result.value.substring(0, 500) + '...', // Preview
           };

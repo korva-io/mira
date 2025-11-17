@@ -37,10 +37,13 @@ const ConfigurationSchema = z.object({
 });
 
 export const QueryInputSchema = z.object({
-  dbType: z.enum(['postgres', 'mongodb']),
   connectionString: z
     .string()
-    .min(5, { message: 'Connection string must be at least 5 characters long.' }),
+    .min(5, { message: 'Connection string must be at least 5 characters long.' })
+    .refine(
+      (val) => val.includes('postgres') || val.includes('mongodb'),
+      { message: 'Connection string must contain either "postgres" or "mongodb"' }
+    ),
   nlQuery: z
     .string()
     .min(20, { message: 'Natural language query must be at least 20 characters long.' }),
@@ -56,13 +59,8 @@ export type QueryInput = z.infer<typeof QueryInputSchema>;
 
 export const queryInputJsonSchema = {
   type: 'object',
-  required: ['dbType', 'connectionString', 'nlQuery', 'userId'],
+  required: ['connectionString', 'nlQuery', 'userId'],
   properties: {
-    dbType: {
-      type: 'string',
-      enum: ['postgres', 'mongodb'],
-      description: 'Type de base de données',
-    },
     connectionString: {
       type: 'string',
       description: 'Chaîne de connexion à la base de données',

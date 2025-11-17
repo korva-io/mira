@@ -200,17 +200,20 @@ export class SchemaExtractor {
   }
 
   async extractSchema(
-    connectionString: string,
-    dbType: string
+    connectionString: string
   ): Promise<Result<string, QueryError>> {
+    const dbType = connectionString.includes('postgres') ? 'postgres' : 
+                  connectionString.includes('mongodb') ? 'mongodb' : null;
+
     if (dbType === 'postgres') {
       return this.extractPostgresSchema(connectionString);
     } else if (dbType === 'mongodb') {
       return this.extractMongoSchema(connectionString);
     } else {
       return err({
-        message: `Unsupported database type: ${dbType}`,
+        message: 'Unsupported database type. Connection string must contain either "postgres" or "mongodb"',
         code: 'UNSUPPORTED_DB_TYPE',
+        details: 'The connection string must contain either "postgres" or "mongodb"',
       });
     }
   }

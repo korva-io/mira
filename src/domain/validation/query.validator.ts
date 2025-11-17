@@ -45,16 +45,9 @@ export class QueryValidator {
 
     const inputObj = input as Record<string, unknown>;
 
-    // Validate database type
-    const dbTypeValidation = this.validateDatabaseType(inputObj['dbType']);
-    if (!dbTypeValidation.isValid) {
-      errors.push(...dbTypeValidation.errors);
-    }
-
     // Validate connection string
     const connectionValidation = this.validateConnectionString(
-      inputObj['connectionString'],
-      inputObj['dbType'] as DatabaseType
+      inputObj['connectionString'] as string
     );
     if (!connectionValidation.isValid) {
       errors.push(...connectionValidation.errors);
@@ -95,44 +88,12 @@ export class QueryValidator {
   /**
    * Validate database type
    */
-  private static validateDatabaseType(dbType: unknown): ValidationResult {
-    const errors: ValidationError[] = [];
-
-    if (!dbType) {
-      errors.push({
-        field: 'dbType',
-        message: 'Database type is required',
-        code: 'REQUIRED_FIELD',
-        value: dbType,
-      });
-    } else if (typeof dbType !== 'string') {
-      errors.push({
-        field: 'dbType',
-        message: 'Database type must be a string',
-        code: 'INVALID_TYPE',
-        value: dbType,
-      });
-    } else if (!this.SUPPORTED_DB_TYPES.includes(dbType as DatabaseType)) {
-      errors.push({
-        field: 'dbType',
-        message: `Database type must be one of: ${this.SUPPORTED_DB_TYPES.join(', ')}`,
-        code: 'INVALID_VALUE',
-        value: dbType,
-      });
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
-  }
 
   /**
    * Validate connection string
    */
   private static validateConnectionString(
-    connectionString: unknown,
-    dbType: DatabaseType
+    connectionString: unknown
   ): ValidationResult {
     const errors: ValidationError[] = [];
 
@@ -157,12 +118,16 @@ export class QueryValidator {
         code: 'INVALID_LENGTH',
         value: connectionString,
       });
-    } else if (dbType && this.CONNECTION_STRING_PATTERNS[dbType]) {
-      const pattern = this.CONNECTION_STRING_PATTERNS[dbType];
-      if (!pattern.test(connectionString)) {
+    } else {
+      // Vérifie si la chaîne de connexion correspond à un des modèles supportés
+      const isValid = Object.values(this.CONNECTION_STRING_PATTERNS).some(pattern => 
+        pattern.test(connectionString)
+      );
+      
+      if (!isValid) {
         errors.push({
           field: 'connectionString',
-          message: `Invalid ${dbType} connection string format`,
+          message: 'Invalid connection string format. Must be a valid PostgreSQL or MongoDB connection string.',
           code: 'INVALID_FORMAT',
           value: connectionString,
         });

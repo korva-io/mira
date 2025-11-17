@@ -37,7 +37,6 @@ export class QueryService {
             const executionResult = await this.databaseRepository.executeQuery(
                 queryResult.value,
                 dbType,
-                connectionString,
             );
             if (executionResult.isErr()) {
                 return err({

@@ -9,6 +9,7 @@ import {
 } from '../domain/types';
 import { AiService, CacheService, DatabaseRepository, Logger } from '../infrastructure/interfaces';
 import { SchemaExtractor } from '../infrastructure/database/schemaExtractor';
+import { inferDbTypeFromConnectionString } from '../infrastructure/utils/dbUtils';
 
 export class QueryService {
   private readonly schemaExtractor: SchemaExtractor;
@@ -25,16 +26,19 @@ export class QueryService {
 
   async executeQuery(input: QueryInput): Promise<QueryResultType> {
     try {
+      // Détecter automatiquement le type de base de données
+      const dbType = input.connectionString.includes('postgres') ? 'postgres' : 'mongodb';
+      
       // Check cache first
-      const cacheKey = `${input.userId}:${input.nlQuery}:${input.dbType}`;
+      const cacheKey = `${input.userId}:${input.nlQuery}:${input.connectionString}`;
       const cachedResult = await this.cache.get(cacheKey);
       if (cachedResult) {
         return ok(JSON.parse(cachedResult) as QueryResult);
       }
+      
       // Extract database schema first
       const schemaResult = await this.schemaExtractor.extractSchema(
-        input.connectionString,
-        input.dbType
+        input.connectionString
       );
       if (schemaResult.isErr()) {
         return err(schemaResult.error);
@@ -43,15 +47,15 @@ export class QueryService {
       // Translate natural language to query using the schema
       const translationResult = await this.ai.translateToQuery(
         input.nlQuery,
-        input.dbType,
+        input.connectionString,
         schemaResult.value
       );
       if (translationResult.isErr()) {
         return err(translationResult.error);
       }
 
-      // Execute query
-      const repo = input.dbType === 'postgres' ? this.postgresRepo : this.mongoRepo;
+      // Select repository based on detected database type
+      const repo = dbType === 'postgres' ? this.postgresRepo : this.mongoRepo;
       // Remplace tout le bloc d'extraction
       const queryObjRaw = Array.isArray(translationResult.value.data)
         ? translationResult.value.data[0]
@@ -84,7 +88,7 @@ export class QueryService {
         });
       }
       const t0 = Date.now();
-      const execPromise = repo.executeQuery(queryToExecute, input.dbType, input.connectionString);
+      const execPromise = repo.executeQuery(queryToExecute, input.connectionString);
 
       const executionResult = input.configuration?.timeout
         ? await Promise.race([
@@ -128,6 +132,7 @@ export class QueryService {
             analysis = resultValue as Record<string, unknown>;
           }
           comment = (analysis['comment'] as string) || comment;
+          console.log("analysis comment ", analysis['comment'])
         } catch (e) {
           console.log('Failed to parse AI analysis/format', { error: e });
         }
@@ -236,7 +241,7 @@ export class QueryService {
         queryIntent: input.nlQuery,
         context: {
           userQuery: input.nlQuery,
-          interpretedAs: `Requête ${input.dbType} exécutée avec succès`,
+          interpretedAs: `Requête ${dbType} exécutée avec succès`,
         },
         dataInsights: isCount
           ? `Valeur de comptage : ${countValue}`
@@ -262,7 +267,7 @@ export class QueryService {
           comment,
           metadata: {
             executionTime: execMs,
-            queryType: input.dbType,
+            queryType: dbType,
             timestamp: new Date().toISOString(),
             resultType,
             totalCount: 1,
@@ -283,7 +288,7 @@ export class QueryService {
           comment,
           metadata: {
             executionTime: execMs,
-            queryType: input.dbType,
+            queryType: dbType,
             timestamp: new Date().toISOString(),
             resultType,
             totalCount: Array.isArray(rows) ? rows.length : undefined,
@@ -323,14 +328,15 @@ export class QueryService {
 
   async generateSchemaInsights(
     failedQueries: string[],
-    connectionString: string
+    connectionString: string,
   ): Promise<Result<string, QueryError>> {
     try {
-      // Extract the current schema
+      // Détecter automatiquement le type de base de données
+      const dbType = inferDbTypeFromConnectionString(connectionString);
+      
+      // Extract schema first
       const schemaResult = await this.schemaExtractor.extractSchema(
-        connectionString,
-        'postgres' // Default to postgres, could be enhanced to detect from connection string
-      );
+        connectionString      );
       if (schemaResult.isErr()) {
         return err({
           code: 'SCHEMA_EXTRACTION_FAILED',
@@ -339,9 +345,9 @@ export class QueryService {
       }
 
       // Generate insights using AI
-      const prompt = `Given the following database schema:\n${JSON.stringify(schemaResult.value, null, 2)}\n\nAnd these failed queries:\n${failedQueries.join('\n')}\n\nProvide insights on how to improve the schema to better support these queries.`;
+      const prompt = `Given the following database schema (${dbType}):\n${JSON.stringify(schemaResult.value, null, 2)}\n\nAnd these failed queries:\n${failedQueries.join('\n')}\n\nProvide insights on how to improve the schema to better support these queries.`;
 
-      const insightsResult = await this.ai.translateToQuery(prompt, 'postgres', schemaResult.value);
+      const insightsResult = await this.ai.translateToQuery(prompt, dbType, schemaResult.value);
       if (insightsResult.isErr()) {
         return err({
           code: 'INSIGHTS_GENERATION_FAILED',
