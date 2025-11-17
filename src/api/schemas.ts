@@ -32,6 +32,8 @@ const ConfigurationSchema = z.object({
     .enum(['camelCase', 'snake_case', 'PascalCase', 'kebab-case', 'original'])
     .optional()
     .default('original'),
+  maxResults: z.number().min(1).max(10000).optional(),
+  timeout: z.number().min(1000).max(300000).optional(),
 });
 
 export const QueryInputSchema = z.object({
@@ -139,23 +141,47 @@ export const queryInputJsonSchema = {
 
 export const queryResponseSchema = {
   type: 'object',
-  required: ['data', 'comment'],
+  required: ['data', 'metadata', '___miraNotes'],
   properties: {
     data: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: true,
-      },
+      // Peut être un array ou un nombre (pour count)
+      oneOf: [
+        {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+        { type: 'number' },
+      ],
       description: 'Données brutes ou enrichies selon configuration',
     },
-    comment: {
-      type: 'string',
-      description: 'Commentaire synthétique en français',
-    },
-    meta: {
+    metadata: {
       type: 'object',
       description: 'Métadonnées d’analyse (tri, filtres, complexité, etc.)',
+      additionalProperties: true,
+    },
+    ___miraNotes: {
+      type: 'object',
+      required: ['comment', 'queryIntent', 'context', 'dataInsights', 'suggestions'],
+      properties: {
+        comment: { type: 'string' },
+        queryIntent: { type: 'string' },
+        context: {
+          type: 'object',
+          required: ['userQuery', 'interpretedAs'],
+          properties: {
+            userQuery: { type: 'string' },
+            interpretedAs: { type: 'string' },
+          },
+        },
+        dataInsights: { type: 'string' },
+        suggestions: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
       additionalProperties: true,
     },
   },

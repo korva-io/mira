@@ -51,23 +51,50 @@ export interface QueryMetadata {
   readonly timestamp: string;
   readonly cacheHit?: boolean;
   readonly model?: string;
+  // Données de pagination
+  readonly totalCount?: number;
+  readonly page?: number;
+  readonly pageSize?: number;
+  readonly hasNextPage?: boolean;
+  readonly hasPreviousPage?: boolean;
+  // Informations sur la requête
+  readonly sqlQuery?: string;
+  readonly queryComplexity?: 'low' | 'medium' | 'high';
+  readonly dataFreshness?: string;
+  // Autres métadonnées API utiles
+  readonly resultType?: 'list' | 'single' | 'count' | 'aggregation';
+  readonly affectedRows?: number;
+  readonly warnings?: string[];
+}
+
+/**
+ * Mira Notes - Informations contextuelles et commentaires
+ */
+export interface MiraNotes {
+  readonly comment: string;
+  readonly explanation?: string;
+  readonly suggestions?: string[];
+  readonly queryIntent?: string;
+  readonly dataInsights?: string;
+  readonly performance?: {
+    readonly optimizationTips?: string[];
+    readonly indexSuggestions?: string[];
+  };
+  readonly context?: {
+    readonly userQuery: string;
+    readonly interpretedAs?: string;
+    readonly assumptions?: string[];
+  };
 }
 
 /**
  * Query result structure
  */
 export interface QueryResult {
-  readonly data: ReadonlyArray<Record<string, unknown>>;
-  readonly comment?: string;
+  // Data peut être un tableau (liste) ou une valeur scalaire (count, etc.)
+  readonly data: ReadonlyArray<Record<string, unknown>> | Record<string, unknown> | number | string | boolean;
   readonly metadata: QueryMetadata;
-  readonly meta?: {
-    readonly default_ordering?: string;
-    readonly configuration?: QueryConfiguration;
-    readonly filters_applied?: ReadonlyArray<string>;
-    readonly query_complexity?: 'low' | 'medium' | 'high';
-    readonly data_freshness?: string;
-    readonly presentation_format?: string;
-  };
+  readonly ___miraNotes: MiraNotes;
 }
 
 /**

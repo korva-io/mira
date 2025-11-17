@@ -2,10 +2,16 @@ export enum PromptName {
   SCHEMA_EXPLORER = 'SCHEMA_EXPLORER',
   QUERY_BUILDER = 'QUERY_BUILDER',
   DATA_ANALYZER = 'DATA_ANALYZER',
+  DATA_FORMATTER = 'DATA_FORMATTER',
   INSIGHT_ENGINE = 'INSIGHT_ENGINE',
 }
 
-export const PROMPTS = {
+export const PROMPTS: Record<PromptName, {
+  name: string;
+  description: string;
+  systemPrompt?: string;
+  userPromptTemplate?: string;
+}> = {
   [PromptName.SCHEMA_EXPLORER]: {
     name: 'korva.mira.schema_explorer',
     description: 'Extract full database schema as a graph',
@@ -21,6 +27,10 @@ export const PROMPTS = {
   [PromptName.INSIGHT_ENGINE]: {
     name: 'korva.mira.insight_engine',
     description: 'Generate schema improvement recommendations',
+  },
+  [PromptName.DATA_FORMATTER]: {
+    name: 'korva.mira.data_formatter',
+    description: 'Format raw database results into strict API responses',
   },
 } as const;
 
@@ -102,68 +112,43 @@ Configuration: {configuration}`,
   [PromptName.DATA_ANALYZER]: {
     name: PROMPTS[PromptName.DATA_ANALYZER].name,
     description: PROMPTS[PromptName.DATA_ANALYZER].description,
-    systemPrompt: `You are a data interpreter and visual presentation engine.
+    systemPrompt: `You are a data analysis engine for database query results.
 
-Given:
-- Raw data (array, object, scalar, or empty)
-- Original user question
-- Optional configuration object
+Your job is to:
+- Summarize the key facts and insights from the provided data
+- Detect anomalies, outliers, or missing values
+- Suggest possible improvements or next questions
+- Output a JSON object with:
+  - insights: string (summary)
+  - stats: object (optional, e.g., min, max, avg, count)
+  - anomalies: array (optional)
+  - comment: string (short, ≤120 chars)
 
-Your job is to return a **deterministic, structured JSON** with:
-- All input data preserved
-- Sorting applied exactly as in query generation
-- Consistent structure
-
-RULES (STRICT ORDER):
-
-1. **KEY FORMAT (MANDATORY)**:
-   - Use configuration.outputKeyFormat if provided
-   - Options: "camelCase" | "snake_case" | "PascalCase" | "kebab-case" | "original"
-   - Default: "original"
-   - Apply to **ALL keys** in rows and mira_note
-   - Example: "user_id" → "userId" (camelCase), "created_at" → "createdAt"
-
-2. **SORTING (MUST MATCH QUERY_BUILDER)**:
-   - If configuration.sort → apply exactly
-   - Else → sort by first date field DESC:
-     - created_at > updated_at > date > timestamp > inserted_at > modified_at
-     - Fallback: id or _id DESC
-   - Apply **first**, before any processing.
-
-3. **PRESERVE ALL ROWS** unless configuration.filters or groupBy.
-
-4. **OUTPUT STRUCTURE (DISCRIMINATED UNION)**:
-   - If returnType === "scalar" → { "value": <number|string|boolean> }
-   - If returnType === "object" → { "rows": [ <one object> ] }
-   - If returnType === "array" → { "rows": [ <multiple objects> ] }
-   - If empty → { "rows": [], "comment": "Aucun résultat." }
-
-   → **NEVER mix value and rows**
-
-5. **ENRICH EACH ROW**:
-   - Add mira_note: 1 short fact (≤6 words)
-     - "Most recent", "Only record", "No date", etc.
-     - Omit if irrelevant.
-
-6. **GENERATE comment**:
-   - 1 sentence only (≤120 chars)
-   - Same language as question
-   - Format: "X [items] found. [Key fact]."
-
-7. **INCLUDE meta**:
-   {
-     "default_ordering": "by created_at descending",
-     "configuration": { ...user config... },
-     "filters_applied": [],
-     "query_complexity": "low"|"medium"|"high",
-     "data_freshness": "real-time",
-     "presentation_format": "table"|"list"|"single"|"empty"
-   }
-
-Return **exactly one JSON object**. Be **100% consistent** for same input + config.`,
+Be concise and accurate.`,
     userPromptTemplate: `Data: {data}
 Question: {question}
 Configuration: {configuration}`,
+  },
+  [PromptName.DATA_FORMATTER]: {
+    name: PROMPTS[PromptName.DATA_FORMATTER].name,
+    description: PROMPTS[PromptName.DATA_FORMATTER].description,
+    systemPrompt: `You are a strict API response formatter for database query results.
+Your job is to:
+- Take the raw data, user question, configuration, and analysis (insights, stats, comment, etc.)
+- Output a JSON object matching EXACTLY this discriminated union:
+  If returnType === "scalar" → { "value": <number|string|boolean> }
+  If returnType === "object" → { "rows": [ <one object> ] }
+  If returnType === "array" → { "rows": [ <multiple objects> ] }
+  If empty → { "rows": [], "comment": "Aucun résultat." }
+- NEVER mix value and rows
+- Include meta: { default_ordering, configuration, filters_applied, query_complexity, data_freshness, presentation_format }
+- Include comment (max 120 chars) in meta
+- DO NOT add any extra fields or explanations
+- Return exactly one JSON object.`,
+    userPromptTemplate: `Data: {data}
+Question: {question}
+Configuration: {configuration}
+Analysis: {analysis}`,
   },
   [PromptName.INSIGHT_ENGINE]: {
     name: PROMPTS[PromptName.INSIGHT_ENGINE].name,

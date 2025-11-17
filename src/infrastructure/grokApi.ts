@@ -104,8 +104,6 @@ export class GrokApi implements AiService {
         schema: schemaToUse,
       });
 
-      console.log("api query result ", queryResult);
-
       if (queryResult.isErr()) {
         return err({
           message: 'Failed to generate query',
@@ -114,14 +112,19 @@ export class GrokApi implements AiService {
         });
       }
 
-      // RETOURNE UNIQUEMENT LA REQUÊTE SQL COMME CHAÎNE
+      // RETOURNE UNIQUEMENT LA REQUÊTE SQL COMME CHAÎNE, avec metadonnées conformes
+      const sql = queryResult.value.trim();
+      const complexity = sql.length > 200 ? 'high' : sql.includes('JOIN') ? 'medium' : 'low';
       return ok({
-        data: [{ query: queryResult.value.trim() }], // ← SQL pur
+        data: [{ query: sql }],
         metadata: {
-          executionTime: 0, // Adding the required executionTime property
-          model: 'grok-3-mini',
+          executionTime: 0,
           queryType: dbType,
           timestamp: new Date().toISOString(),
+          resultType: 'aggregation',
+          sqlQuery: sql,
+          queryComplexity: complexity as 'low' | 'medium' | 'high',
+          dataFreshness: 'n/a',
         },
       });
     } catch (error) {
@@ -180,5 +183,27 @@ export class GrokApi implements AiService {
       question,
       configuration,
     });
+  }
+
+  async analyzeAndFormat(
+    data: string,
+    question: string,
+    configuration: Record<string, unknown> = {}
+  ): Promise<Result<string, QueryError>> {
+    // 1. Analyse
+    const analysisResult = await this.callPrompt(PromptName.DATA_ANALYZER, {
+      data,
+      question,
+      configuration,
+    });
+    if (analysisResult.isErr()) return analysisResult;
+    // 2. Formatage
+    const formatResult = await this.callPrompt(PromptName.DATA_FORMATTER, {
+      data,
+      question,
+      configuration,
+      analysis: analysisResult.value,
+    });
+    return formatResult;
   }
 }

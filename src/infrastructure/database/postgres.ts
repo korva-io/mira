@@ -17,7 +17,6 @@ export class PostgresRepository implements DatabaseRepository {
       });
 
       const result = await pool.query(query);
-      console.log("ok connected to database ", result)
       return ok(result.rows);
 
     } catch (error: any) {
