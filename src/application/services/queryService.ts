@@ -61,9 +61,13 @@ export class QueryService {
             return ok({
                 data: executionResult.value,
                 metadata: {
-                    executionTime: 0,
+                    executionTime: 0, 
                     queryType: dbType,
                     timestamp: new Date().toISOString(),
+                    resultType: 'list',
+                    sqlQuery: queryResult.value, 
+                    queryComplexity: 'low', 
+                    dataFreshness: 'n/a', 
                 },
             });
         } catch (error) {
